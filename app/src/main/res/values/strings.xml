@@ -46,25 +46,16 @@
     <string name="next_review">Next review: %1$s</string>
     <string name="delete_course_warning">Delete this class and all its notes, flashcards, and assignments? This cannot be undone.</string>
     <string name="delete_item_warning">Delete this item? This cannot be undone.</string>
-    <string name="cloud_notice">The main study space stays on this device. Uninstalling or clearing app data removes it. Backend sign-in does not upload or protect these notes, classes, cards, or assignments. Only classes explicitly created or copied in the separate Synced Classes workspace can synchronize.</string>
-    <string name="backend_account">Backend Account</string>
-    <string name="backend_development">Development</string>
-    <string name="account_local_notice">Development connection to local Laravel. Sign-in does not upload main study data or change your local profile. The main study space is shared on this device. Synced Classes is a separate account-only workspace with explicit copy and synchronization controls.</string>
     <string name="account_email">Email address</string>
     <string name="account_password">Password</string>
     <string name="account_confirmation">Confirm password (12 characters minimum)</string>
     <string name="account_sign_in">Sign in</string>
     <string name="account_create">Create account</string>
-    <string name="account_existing">Already have an account? Sign in</string>
-    <string name="account_check">Test backend connection</string>
     <string name="account_sign_out">Sign out</string>
-    <string name="account_forget">Forget local sign-in</string>
-    <string name="account_forget_warning">Remove the saved sign-in from this device without contacting the server? Its server token will remain valid until it expires. Local study data will not change. Use Sign out when the backend is reachable to revoke the token.</string>
-    <string name="account_identity">%1$s\n%2$s\nSaved sign-in. Test the connection to verify it with the server.</string>
     <string name="account_signed_out">Not signed in</string>
-    <string name="account_working">Contacting backend…</string>
+    <string name="account_working">Please wait…</string>
     <string name="synced_classes">Synced Classes</string>
-    <string name="sync_notice">Separate account-only class workspace. Works offline after sign-in. Tap Sync now to send queued changes and fetch changes from other devices. Main Classes, notes, cards, and assignments stay device-only and are not changed here.</string>
+    <string name="sync_notice">Separate account-only classes and notes. Works offline after sign-in. Tap Sync now to exchange changes with other devices. Main Classes, notes, cards, and assignments stay device-only and unchanged.</string>
     <string name="sync_now">Sync now</string>
     <string name="sync_import">Copy device-only classes</string>
     <string name="sync_import_warning">Copy class names, codes, professors, and locations into this account? They will upload when you tap Sync now. Original device-only classes and their notes, cards, and assignments stay unchanged and are not uploaded. Each source class is copied at most once per account.</string>
@@ -78,7 +69,7 @@
     <string name="sync_class_details">%1$s\n%2$s\n%3$s</string>
     <string name="sync_up_to_date">Synchronized</string>
     <string name="sync_resolve">Resolve conflict</string>
-    <string name="sync_delete_warning">Queue deletion of this account class? Sync now will delete it on the server and other devices. Main device-only classes remain unchanged.</string>
+    <string name="sync_delete_warning">Queue deletion of this account class and its synced notes? Sync now sends deletion to other devices. Pending note edits become local recovery drafts and cannot upload to this class. Main device-only classes remain unchanged.</string>
     <string name="sync_deleted_version">Deleted class</string>
     <string name="sync_compare">LOCAL VERSION\n%1$s\n\nSERVER VERSION\n%2$s\n\nChoose which to keep. Choosing local queues another upload; choosing server discards the pending local edit. A deleted version remains deleted. Restoring a deleted class does not restore its server notes, cards, or assignments.</string>
     <string name="sync_keep_local">Keep local</string>
@@ -137,9 +128,6 @@
     <string name="edit_assignment">Edit Assignment</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="your_statistics">Your Statistics</string>
-    <string name="on_this_device">On This Device</string>
-    <string name="storage_and_privacy">Storage &amp; Privacy</string>
-    <string name="local_only">Local-only study space</string>
     <string name="quick_stats">Quick Stats</string>
     <string name="cards_due">Cards Due</string>
     <string name="ungraded">Ungraded</string>
@@ -170,4 +158,28 @@
         <item>University of Tokyo</item>
         <item>University of Melbourne</item>
     </string-array>
+    <string name="synced_notes">Synced Notes</string>
+    <string name="note_recovery">Recovery drafts</string>
+    <string name="note_add">Add note</string>
+    <string name="note_sync_title">Note title</string>
+    <string name="note_sync_content">Note content</string>
+    <string name="note_sync_tags">Tags (one per line)</string>
+    <string name="note_finish_editor">Save or cancel the open note editor before continuing.</string>
+    <string name="note_recovery_status">Parent class deleted. Local recovery draft; upload blocked.</string>
+    <string name="note_view">View versions</string>
+    <string name="note_copy_recovery">Copy into active class</string>
+    <string name="note_already_copied">Already copied. Original recovery draft preserved.</string>
+    <string name="note_delete_warning">Queue deletion of this synced note? Other devices will receive its deletion after synchronization.</string>
+    <string name="note_invalid_saved">Cannot read the saved note data. Close this screen and retry synchronization.</string>
+    <string name="note_local_version">Local version</string>
+    <string name="note_server_version">Server version</string>
+    <string name="note_no_destination">Create an active Synced Class before copying this recovery draft.</string>
+    <string name="note_choose_destination">Choose an active Synced Class</string>
+    <string name="note_copy_confirmation">Copy the local title, content, and tags into %1$s? The original recovery draft and any saved server conflict will remain unchanged. The deleted class will not be restored.</string>
+    <string name="note_discard_warning">Close without saving this editor? Previously saved offline notes are preserved.</string>
+    <string name="welcome_message">Your study day starts here. Sign in or create an account to continue.</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_in_microsoft">Sign in with Microsoft</string>
+    <string name="finish_provider_sign_in">Finish provider sign-in</string>
+    <string name="cancel_provider_sign_in">Cancel provider sign-in</string>
 </resources>

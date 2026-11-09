@@ -14,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.studenthaven.android.BuildConfig;
+import com.studenthaven.android.BackendTestAccounts;
 import com.studenthaven.android.HavenApplication;
 import com.studenthaven.android.R;
 import com.studenthaven.android.data.AuthRepository;
@@ -39,6 +40,7 @@ public class ClassSyncWorkflowTest {
         Assume.assumeTrue("Do not overwrite a developer sign-in", store.load() == null);
         String suffix = UUID.randomUUID().toString();
         String password = "Test-" + suffix;
+        BackendTestAccounts.awaitRegistrationSlot();
         AuthRepository.Account account = app.auth().signIn(true, "Class UI",
                 "sync-ui-" + suffix + "@example.com", password, password);
         StudyDatabase.Course original = new StudyDatabase.Course();
@@ -46,11 +48,8 @@ public class ClassSyncWorkflowTest {
         original.code = "LOCAL";
         app.repository().saveCourse(original, false);
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            onView(withId(R.id.tab_more)).perform(click());
-            onView(withText(R.string.profile)).perform(scrollTo(), click());
-            onView(withText(R.string.backend_account)).perform(scrollTo(), click());
-            await(app);
-            onView(withId(R.id.account_classes)).perform(scrollTo(), click());
+            scenario.onActivity(activity -> new ClassSyncDialogFragment()
+                    .showNow(activity.getSupportFragmentManager(), "class-sync-test"));
             await(app);
             onView(withId(R.id.sync_name)).perform(scrollTo(), replaceText("UI offline class"), closeSoftKeyboard());
             onView(withId(R.id.sync_code)).perform(scrollTo(), replaceText("BIO"), closeSoftKeyboard());
@@ -102,7 +101,7 @@ public class ClassSyncWorkflowTest {
             onView(withId(R.id.sync_identity)).check(matches(withText(R.string.account_signed_out)));
             onView(withId(R.id.sync_close)).perform(click());
             await(app);
-            onView(withId(R.id.account_identity)).check(matches(withText(R.string.account_signed_out)));
+            onView(withId(R.id.welcome_submit)).check(matches(isDisplayed()));
         } finally {
             BackendClient client = new BackendClient(BuildConfig.BACKEND_URL);
             JSONObject login = client.request("POST", "auth/login", new JSONObject()

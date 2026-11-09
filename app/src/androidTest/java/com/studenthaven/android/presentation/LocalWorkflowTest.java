@@ -4,18 +4,39 @@ import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.*;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static org.hamcrest.Matchers.*;
 import android.content.Context;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.studenthaven.android.R;
+import com.studenthaven.android.data.SessionStore;
+import org.json.JSONObject;
+import org.junit.Before;
+import org.junit.After;
+import org.junit.Assume;
 import java.util.UUID;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class LocalWorkflowTest {
+    @Before public void savedTestSession() throws Exception {
+        SessionStore store = new SessionStore(ApplicationProvider.getApplicationContext());
+        Assume.assumeTrue("Do not overwrite a developer sign-in", store.load() == null);
+        store.save(new JSONObject().put("token", "instrumentation-only")
+                .put("expires_at", "2099-01-01T00:00:00Z")
+                .put("data", new JSONObject().put("id", "local-ui-test").put("name", "UI Tester")
+                        .put("email", "ui@example.com")).toString());
+    }
+
+    @After public void clearTestSession() throws Exception {
+        SessionStore store = new SessionStore(ApplicationProvider.getApplicationContext());
+        String saved = store.load();
+        if (saved != null && new JSONObject(saved).optString("token").equals("instrumentation-only")) store.clear();
+    }
+
     @Test public void classesNotesGenerationReviewGradesAndDeletionWork() throws Exception {
         String className = "Biology " + UUID.randomUUID().toString().substring(0, 6);
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
@@ -46,8 +67,8 @@ public class LocalWorkflowTest {
             onView(withText(R.string.reveal)).perform(click());
             onView(withText("cell division")).check(matches(isDisplayed()));
             scenario.recreate();
-            onView(withText("cell division")).check(matches(isDisplayed()));
-            onView(withText(R.string.review_good)).perform(click());
+            onView(withText("cell division")).inRoot(isDialog()).check(matches(isDisplayed()));
+            onView(withText(R.string.review_good)).inRoot(isDialog()).perform(click());
             awaitIdle();
             onView(withText(R.string.study_complete)).check(matches(isDisplayed()));
             onView(withText(R.string.close)).perform(click());
@@ -84,8 +105,8 @@ public class LocalWorkflowTest {
             onView(withText("Class name cannot be empty.")).check(matches(isDisplayed()));
             field(R.string.course_name, "Unsaved draft");
             scenario.recreate();
-            onView(withHint(R.string.course_name)).check(matches(withText("Unsaved draft")));
-            onView(withText(R.string.cancel)).perform(click());
+            onView(withHint(R.string.course_name)).inRoot(isDialog()).check(matches(withText("Unsaved draft")));
+            onView(withText(R.string.cancel)).inRoot(isDialog()).perform(click());
         }
     }
 

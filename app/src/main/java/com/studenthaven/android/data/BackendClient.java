@@ -50,9 +50,15 @@ public final class BackendClient {
                         + status + "). Check the local server.", status);
             }
             if (status < 200 || status >= 300) {
-                if (status == 409) throw new BackendException(json.optJSONObject("conflict") == null
-                        ? "Class synchronization was rejected (HTTP 409). The saved request is unchanged. Check the backend configuration."
-                        : "This class changed on another device. Choose which version to keep.", status, json);
+                if (path.startsWith("auth/social/") && (status == 400 || status == 409 || status == 503)) {
+                    throw new BackendException(json.optString("message", "Social sign-in failed. Please try again."),
+                            status, json);
+                }
+                if (status == 409) throw new BackendException("parent_deleted".equals(json.optString("code"))
+                        ? "The parent class was deleted. Your note is preserved as a local recovery draft."
+                        : json.optJSONObject("conflict") == null
+                        ? "Synchronization was rejected (HTTP 409). The saved request is unchanged. Check the backend configuration."
+                        : "This record changed on another device. Choose which version to keep.", status, json);
                 if (status == 401) throw new BackendException("Your session expired. Please sign in again.", status);
                 if (status == 429) throw new BackendException("Too many attempts. Please wait a minute and try again.", status);
                 if (status == 422) {
@@ -87,7 +93,7 @@ public final class BackendClient {
         byte[] buffer = new byte[4096];
         int count;
         while ((count = input.read(buffer)) != -1) {
-            if (output.size() + count > 2097152) throw new IOException("Backend response too large.");
+            if (output.size() + count > 4194304) throw new IOException("Backend response too large.");
             output.write(buffer, 0, count);
         }
         return output.toString(StandardCharsets.UTF_8.name());

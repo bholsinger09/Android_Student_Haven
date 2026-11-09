@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:gravity="center_vertical" android:padding="28dp"
+        android:focusable="true" android:focusableInTouchMode="true">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/app_name" android:textSize="36sp" android:textStyle="bold"
+            android:textColor="@color/purple" android:paddingBottom="12dp" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/welcome_message" android:textSize="18sp" android:paddingBottom="24dp" />
+        <Button android:id="@+id/welcome_google" style="@style/HavenAction"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/sign_in_google" />
+        <Button android:id="@+id/welcome_microsoft" style="@style/HavenAction"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/sign_in_microsoft" />
+        <Button android:id="@+id/welcome_finish_social" style="@style/HavenAction"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/finish_provider_sign_in" android:visibility="gone" />
+        <Button android:id="@+id/welcome_cancel_social" style="@style/HavenAction"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/cancel_provider_sign_in" android:visibility="gone" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <Button android:id="@+id/welcome_sign_in" style="@style/HavenAction"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/account_sign_in" />
+            <Button android:id="@+id/welcome_create" style="@style/HavenAction"
+                android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:text="@string/account_create" />
+        </LinearLayout>
+        <TextView android:id="@+id/welcome_heading" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:textSize="24sp"
+            android:text="@string/account_sign_in" android:paddingVertical="16dp" />
+        <EditText android:id="@+id/welcome_name" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="@string/display_name"
+            android:inputType="textPersonName" android:autofillHints="name"
+            android:maxLength="255" android:minHeight="52dp" android:visibility="gone" />
+        <EditText android:id="@+id/welcome_email" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="@string/account_email"
+            android:inputType="textEmailAddress" android:autofillHints="emailAddress"
+            android:maxLength="255" android:minHeight="52dp" />
+        <EditText android:id="@+id/welcome_password" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="@string/account_password"
+            android:inputType="textPassword" android:autofillHints="password"
+            android:saveEnabled="false" android:minHeight="52dp" />
+        <EditText android:id="@+id/welcome_confirmation" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:hint="@string/account_confirmation"
+            android:inputType="textPassword" android:autofillHints="newPassword"
+            android:saveEnabled="false" android:minHeight="52dp" android:visibility="gone" />
+        <Button android:id="@+id/welcome_submit" style="@style/HavenPrimary"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/account_sign_in" android:layout_marginTop="16dp" />
+        <TextView android:id="@+id/welcome_status" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:paddingVertical="16dp"
+            android:accessibilityLiveRegion="polite" />
+    </LinearLayout>
+</ScrollView>

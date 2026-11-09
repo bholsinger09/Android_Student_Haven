@@ -29,6 +29,7 @@ public final class ClassSyncViewModel extends AndroidViewModel {
     }
 
     public LiveData<State> state() { return state; }
+    public void reload() { run(account -> "Offline workspace ready. Tap Sync now to exchange changes."); }
 
     public void sync() {
         run(account -> {

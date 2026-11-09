@@ -11,13 +11,16 @@ public final class ClassSyncRepository {
     private final ClassSyncDatabase database;
     private final ClassSyncDatabase.SyncDao dao;
     private final AuthRepository auth;
+    private final NoteSyncRepository notes;
 
     public ClassSyncRepository(ClassSyncDatabase database, AuthRepository auth) {
         this.database = database;
         this.dao = database.syncDao();
         this.auth = auth;
+        notes = new NoteSyncRepository(database, auth);
     }
 
+    public NoteSyncRepository notes() { return notes; }
     public List<SyncedClass> list(String account) { return dao.all(account); }
 
     public void save(String account, String id, String name, String code, String professor, String location) {
@@ -178,6 +181,7 @@ public final class ClassSyncRepository {
                     dao.putCursor(saved);
                 });
             } while (more);
+            notes.synchronize(account);
         } catch (JSONException exception) {
             throw new BackendException("The backend returned invalid class synchronization data.", exception);
         }

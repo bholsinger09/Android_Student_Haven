@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import com.studenthaven.android.BuildConfig;
+import com.studenthaven.android.BackendTestAccounts;
 import java.util.UUID;
 import org.json.JSONObject;
 import org.junit.Assume;
@@ -34,6 +35,7 @@ public class ClassSyncIntegrationTest {
         AuthRepository.Account account = null;
         AuthRepository.Account other = null;
         try {
+            BackendTestAccounts.awaitRegistrationSlot();
             account = authA.signIn(true, "Sync Tester", "sync-" + suffix + "@example.com", password, password);
             authB.signIn(false, "", account.email(), password, "");
             a = Room.databaseBuilder(context, ClassSyncDatabase.class, dbFile).build();
@@ -107,6 +109,7 @@ public class ClassSyncIntegrationTest {
             deviceB.synchronize(owner);
             assertTrue(b.syncDao().find(owner, id).deleted);
 
+            BackendTestAccounts.awaitRegistrationSlot();
             other = authOther.signIn(true, "Other Account", "sync-other-" + suffix + "@example.com",
                     password, password);
             ClassSyncRepository switched = new ClassSyncRepository(a, authOther);

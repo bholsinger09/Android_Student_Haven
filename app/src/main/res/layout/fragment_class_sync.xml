@@ -25,6 +25,9 @@
             <Button android:id="@+id/sync_import" style="@style/HavenAction"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/sync_import" />
+            <Button android:id="@+id/sync_recovery" style="@style/HavenAction"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/note_recovery" />
             <TextView android:id="@+id/sync_status" android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:paddingVertical="12dp"
                 android:accessibilityLiveRegion="polite" />

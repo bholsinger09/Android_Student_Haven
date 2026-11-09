@@ -54,6 +54,16 @@ public class BackendClientTest {
         assertEquals(180000, response(200, text.toString()).getString("name").length());
     }
 
+    @Test public void acceptsMaximumEscapedUnicodeNoteAndReportsDeletedParent() throws Exception {
+        StringBuilder text = new StringBuilder("{\"content\":\"");
+        for (int i = 0; i < 200000; i++) text.append("\\ud83d\\ude00");
+        text.append("\"}");
+        assertTrue(text.length() > 2097152);
+        assertTrue(text.length() < 4194304);
+        assertEquals(400000, response(200, text.toString()).getString("content").length());
+        expectFailure(409, "{\"code\":\"parent_deleted\"}", "recovery draft");
+    }
+
     private void expectFailure(int status, String body, String message) throws Exception {
         try {
             response(status, body);

@@ -18,7 +18,6 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.studenthaven.android.R;
-import com.studenthaven.android.BuildConfig;
 import com.studenthaven.android.data.StudyDatabase.Assignment;
 import com.studenthaven.android.data.StudyDatabase.Course;
 import com.studenthaven.android.data.StudyDatabase.Flashcard;
@@ -40,6 +39,7 @@ import java.util.stream.Collectors;
 public final class StudyFragment extends Fragment {
     private FragmentStudyBinding binding;
     private StudyViewModel model;
+    private AccountViewModel accountModel;
     private StudyViewModel.Snapshot snapshot;
     private int page;
     private int renderedPage = -1;
@@ -52,6 +52,10 @@ public final class StudyFragment extends Fragment {
 
     @Override public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         model = new ViewModelProvider(requireActivity()).get(StudyViewModel.class);
+        accountModel = new ViewModelProvider(requireActivity()).get(AccountViewModel.class);
+        accountModel.state().observe(getViewLifecycleOwner(), state -> {
+            if (page == 5) render();
+        });
         androidx.core.view.ViewCompat.setAccessibilityHeading(binding.screenTitle, true);
         binding.search.setText(model.search());
         binding.search.addTextChangedListener(new TextWatcher() {
@@ -300,23 +304,39 @@ public final class StudyFragment extends Fragment {
         header.addView(college, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         binding.content.addView(header);
+        renderProfileAccount();
         section(getString(R.string.your_statistics));
         LinearLayout stats = statRow();
         stat(stats, R.drawable.ic_book, snapshot.courses().size(), R.string.classes, R.color.blue);
         stat(stats, R.drawable.ic_note, snapshot.notes().size(), R.string.notes, R.color.green);
         stat(stats, R.drawable.ic_cards, snapshot.cards().size(), R.string.flashcards, R.color.orange);
-        section(getString(R.string.on_this_device));
         card(R.drawable.ic_profile, getString(R.string.edit_profile), "", "", this::editProfile);
         card(R.drawable.ic_college, getString(R.string.my_college_choice),
                 profile().getString("college", getString(R.string.college_unset)), "", this::chooseCollege);
-        if (BuildConfig.DEBUG) {
-            section(getString(R.string.backend_development));
-            card(R.drawable.ic_profile, getString(R.string.backend_account),
-                    getString(R.string.account_local_notice), "",
-                    () -> new AccountDialogFragment().show(getParentFragmentManager(), "backend-account"));
+    }
+
+    private void renderProfileAccount() {
+        AccountViewModel.State state = accountModel.state().getValue();
+        if (state.account() != null) {
+            TextView identity = text(state.account().email(), 14, R.color.secondary_text);
+            binding.content.addView(identity);
+            Button signOut = new AppCompatButton(requireContext(), null, 0);
+            signOut.setId(R.id.profile_sign_out);
+            signOut.setText(R.string.account_sign_out);
+            signOut.setAllCaps(false);
+            signOut.setTextColor(requireContext().getColor(R.color.pink));
+            signOut.setEnabled(!state.busy());
+            signOut.setOnClickListener(view -> accountModel.logout());
+            binding.content.addView(signOut, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
-        section(getString(R.string.storage_and_privacy));
-        card(R.drawable.ic_book, getString(R.string.local_only), getString(R.string.cloud_notice), "", null);
+        String message = state.busy() ? getString(R.string.account_working) : state.message();
+        if (!message.isEmpty()) {
+            TextView status = text(message, 14, state.error() ? R.color.pink : R.color.purple);
+            status.setId(R.id.profile_account_status);
+            status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+            binding.content.addView(status);
+        }
     }
 
     private void chooseCourse() {

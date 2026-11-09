@@ -15,8 +15,9 @@ uses `.jpg` to keep release resource compilation valid without changing image by
 ## Status and scope
 
 This version is **local-first**, not a feature-complete iOS replacement.
-Debug builds include real Laravel account authentication for local development.
-The `feature/class-sync` branch adds a separate account-scoped Synced Classes
+The app opens with real Laravel sign-in/create-account authentication.
+Debug builds connect to the local development backend.
+The `feature/note-sync` branch extends the separate account-scoped Synced Classes
 workspace. Signing in alone does not upload or move existing local study data.
 There is no simulated login or pretend cloud sharing.
 
@@ -45,8 +46,13 @@ Implemented:
   cards, session progress, and explicit review ratings.
 - Searchable college picker using the ten college names in the Swift model,
   with custom college entry and a persisted selection.
-- Debug-only account class workspace with offline edits, durable retry state,
+- Internally tested account class workspace with offline edits, durable retry state,
   change-feed downloads, deletion tracking, and explicit local/server conflict choices.
+- Offline synced notes with titles/content/tags, full conflict comparisons, and
+  recovery drafts when a parent class is deleted.
+- Google and Microsoft browser sign-in with encrypted, restart-safe handoff state,
+  explicit completion/cancellation, and the same session/sign-out lifecycle as
+  password sign-in. Backend provider registrations are required before real use.
 
 Deferred iOS features:
 
@@ -64,8 +70,8 @@ native. The college dashboard shows real local study counts and shortcuts instea
 of fabricated college facts or enrollment statistics. Grades show the implemented
 weighted class grade rather than a nonfunctional GPA display. Study Groups is an
 explicitly unavailable screen until cloud sharing is implemented. No fake
-authentication or password recovery actions are shown. Optional local-backend
-account controls are available only in debug builds under Profile.
+authentication or password recovery actions are shown. Profile offers Sign out;
+the Backend Account developer panel and Local-only study space card are removed.
 
 The local profile is **separate from any backend account**. Study data is stored in this
 app's private device storage. Uninstalling or clearing app data removes it.
@@ -73,11 +79,14 @@ Automatic backups and device transfers are excluded; there is no export yet.
 The app requests Internet access for backend authentication, but no camera or
 notification permissions.
 
-## Local Laravel authentication (debug only)
+## Welcome, sign-in, and sign-out
 
-Optional registration, login, logout, session restoration, and a backend connection
-test are available. They do not change the original Room tables or associate
-existing study data with an account. There is deliberately
+Launching without a saved, unexpired sign-in shows a welcome screen with
+**Sign in**, **Create account**, **Sign in with Google**, and
+**Sign in with Microsoft**. Study tabs are unavailable until sign-in
+succeeds. Restoring a saved session opens the main workspace. These changes do
+not change the original Room tables or associate existing study data with an account.
+There is deliberately
 no automatic import/upload or profile overwrite. Anyone using the device still
 sees the same local classes and notes, including after switching backend accounts.
 
@@ -100,26 +109,83 @@ loopback to the Mac. Repeat the reverse command after restarting/reconnecting a
 device. With multiple devices use `adb -s <serial> reverse ...`. The Laravel
 server can remain bound to Mac loopback; do not expose it on your LAN.
 
-Open **More > Profile > Backend Account**. Test the connection while signed out,
-create an account (matching passwords, at least 12 characters and at most
-72 UTF-8 bytes), or sign in. Test the connection again to verify the authenticated
-profile. Sign out contacts Laravel to revoke the current device token. A failed
-network logout keeps the sign-in so you can retry; **Forget local sign-in**
-removes it only from this device without revoking the server token.
+On the welcome screen, create an account (matching passwords, at least 12
+characters and at most 72 UTF-8 bytes) or sign in. Successful authentication
+opens Home. **More > Profile > Sign out** revokes the current device token,
+removes the saved sign-in, and returns to welcome with the study tabs hidden.
+Back navigation and relaunch cannot reopen the signed-out workspace. Signing in
+again starts on Home. A failed network logout keeps the sign-in and displays an
+error so it can be retried; there is no silent offline sign-out.
+Signing out preserves device-only study data, account-scoped offline notes,
+pending changes, and recovery drafts. The main workspace remains shared on the
+device, as before; authentication is not a migration to account-scoped main data.
+The experimental sync workspace is retained for automated tests, not exposed by
+the app's navigation. Backend connectivity checks belong in the terminal:
 
-Tokens expire after 30 days. The account screen reports expired/revoked sessions
-and clears the saved token after an authenticated 401. Saved sign-ins are not
-proof that the server session is still valid; use the connection test to verify.
+```sh
+curl -i -H 'Accept: application/json' http://127.0.0.1:8088/api/v1/me
+```
+
+An unauthenticated 401 is expected. Use the backend's API tests for authenticated
+behavior instead of placing real tokens in shell history.
+
+### Provider sign-in
+
+Configure the Google and Microsoft **Web** OAuth clients using the setup section
+in the sibling backend project's [README](../Student_Haven_Backend/README.md).
+Only the backend stores provider secrets; no Android OAuth client secret, Firebase,
+or embedded WebView is used. Microsoft accepts personal and work/school accounts
+through its `common` tenant. Without credentials, the buttons show an explicit
+provider-not-configured error rather than signing in.
+
+Choose a provider on welcome, finish consent/sign-in in the system browser, and
+return through the app link. If the browser does not reopen the app, switch back
+and choose **Finish provider sign-in**. A still-pending browser response keeps the
+request available for retry. **Cancel provider sign-in** discards the encrypted
+local verifier and enables starting over. Pending requests survive Activity
+recreation/process restart and expire after ten minutes. No password is collected
+by the app for these flows.
+
+The backend's registered callbacks for local development are:
+
+- Google: `http://localhost:8088/api/v1/auth/social/google/callback`
+- Microsoft: `http://localhost:8088/api/v1/auth/social/microsoft/callback`
+
+`adb reverse tcp:8088 tcp:8088` must remain active for the external browser too.
+The app receives only `studenthaven://oauth/callback?attempt=<uuid>`, checks it
+against the encrypted pending request, and proves possession of a random verifier
+to obtain its Sanctum session. API/provider tokens are never put in callback URLs.
+This proof binds the mobile handoff; provider code redemption is the backend's
+confidential Web OAuth flow. Unexpected callbacks cannot sign in.
+
+Matching emails do **not** link accounts: Google, Microsoft and password logins
+remain separate backend identities, as requested. This does not change the
+original main workspace's shared device-local storage behavior described above.
+Sign-out returns to welcome and revokes the app's device token, not the provider's
+browser login. Provider MFA is subject to that provider/account's policies.
+
+Automated tests cover proof persistence, challenge correctness, wrong callbacks,
+untrusted browser URLs, pending retry, cancellation, expiry, failure, and welcome
+routing. Backend tests exercise actual provider adapters with mocked HTTP,
+including Microsoft JWT signature/audience rejection. Real sign-in still requires
+console registration and live acceptance tests. Production also requires an HTTPS
+backend URL (release remains unconfigured) and HTTPS registered backend callbacks.
+
+Tokens expire after 30 days. Expiration on session restoration and authenticated
+401 responses return to welcome. Saved sign-ins are not proof that the server
+session is still valid; revocation is detected on the next authenticated request.
 Validation errors, throttling, malformed responses, and unavailable servers are
 shown explicitly. No password is persisted or saved during Activity recreation.
-Passwords must be reentered after rotation. Account screenshots are blocked.
+Passwords must be reentered after rotation. Welcome-screen screenshots are blocked.
 
 The token and cached account identity are AES-GCM encrypted with an
 Android Keystore key in private preferences; backups remain disabled. Local
 name/college preferences and Room data are independent of that encrypted session.
 Do not use production credentials with this development HTTP endpoint.
 Cleartext HTTP is permitted **only for loopback in debug builds**. Release builds
-have no backend URL or account entry point and do not include the HTTP exception.
+have no backend URL and do not include the HTTP exception. They show welcome
+but cannot authenticate until a production HTTPS backend URL is configured;
+an attempt reports the missing configuration rather than bypassing sign-in.
 Configure a real HTTPS service and complete integration of the main study space
 before production use.
 
@@ -134,20 +200,29 @@ UI workflow is opt-in and creates/deletes a temporary account:
 
 Start Laravel and set up `adb reverse` first. Use a disposable local development
 database, never a production service. The live test skips if a sign-in already
-exists to avoid overwriting it. It verifies registration, invalid login, profile
-verification, persistence/recreation, token revocation, expired-session handling,
-and unchanged local profile/study counts. If a test is interrupted, inspect the
-local backend for leftover `android-...@example.com` or `sync-...@example.com`
+exists to avoid overwriting it. It verifies welcome registration, invalid login,
+session restoration/recreation, logout routing, back navigation, token revocation,
+and unchanged local profile/study counts. Study UI tests inject an isolated
+test-only saved session, without a guest mode or production bypass.
+If a test is interrupted, inspect the
+local backend for leftover `android-...@example.com`, `sync-...@example.com`,
+`notes-...@example.com`, or `note-ui-...@example.com`
 test accounts and delete them.
+The live suite waits one minute before its first temporary registration and
+paces further registrations at five per minute, respecting the unchanged API
+rate limits. Allow a few minutes for a complete live run; do not run another
+registration suite against the same local server concurrently.
 
-## Account class synchronization (debug only)
+## Experimental account class and note synchronization (automated tests)
 
-Use the backend's `backend-class-sync` branch with its latest migrations, then
-open **More > Profile > Backend Account > Synced Classes** after signing in.
+Use the backend's `backend-note-sync` branch with its latest migrations.
+The former Profile > Backend Account developer entry is removed; the following
+workspace and dialogs are exercised directly by instrumentation tests only.
+They are not the app's main study workspace and have no navigation entry.
 
-- This is a separate class-only workspace, **not the main Classes tab**. Notes,
-  cards, assignments, grades, main profile, and existing device-only classes do not
-  move or synchronize. This separation is intentional for the first sync stage.
+- This is a separate classes-and-notes workspace, **not the main Classes or Notes
+  tabs**. Existing device-only classes/notes, cards, assignments, grades, and the
+  main profile do not move or synchronize.
 - Add or edit a class with **Save offline**. **Sync now** explicitly uploads pending
   changes and downloads the account's latest changes. There is no background job,
   automatic reconnect sync, or real-time listener yet; tap it on each device.
@@ -172,10 +247,45 @@ open **More > Profile > Backend Account > Synced Classes** after signing in.
   deletion. Cancel keeps both unresolved. **Keep local** queues the chosen version
   against the server's version; **Use server** discards the pending local edit.
   A newer change can cause another conflict. No last-write-wins overwrite occurs.
-- Restoring class metadata after a server deletion cannot restore that class's
-  deleted server notes, cards, or assignments. Those features are not synced here.
+- Restoring class metadata after a server deletion does not restore its deleted
+  notes, cards, or assignments.
 
-Room schema exports cover both databases. The original study database stays at
+### Synced Notes and recovery drafts
+
+Open **Synced Notes** on an active class, then **Add note**. Enter a title,
+plain-text content, and optional tags (one per line). **Save** persists locally,
+even before the parent class has been uploaded. **Sync now** synchronizes class
+metadata first, then notes. It is manual on every device; there is no background
+sync. Notes remain account-scoped and separate from the main Notes tab.
+
+- Titles allow 255 Unicode characters, content 200,000, and up to 50 unique tags
+  of 100 characters each. Content preserves indentation and trailing newlines.
+- Saved notes survive app restarts. An open editor retains its unsaved text across
+  rotation in its ViewModel, not a large saved-state Bundle. Save before leaving:
+  unsaved editor text does not survive process termination. Closing an open editor
+  requires confirmation; synchronization is blocked until it is saved or cancelled.
+- **View versions** shows full, scrollable content and tags. A conflict retains
+  both local and server versions until **Keep local** or **Use server** is chosen.
+  Cancel leaves both untouched. Choosing local against a note-deletion conflict
+  can explicitly restore that note only while its parent class is active.
+- Immutable dispatched note requests are persisted before sending and replayed
+  with the same mutation ID after an unavailable server, lost response, or restart.
+  Editing that row is blocked until its acknowledgement/conflict is recovered.
+- If another device deletes a class while this device has pending note edits or
+  new notes, those local versions become **Recovery drafts**. They never upload
+  to the deleted class and do not automatically restore it. Existing saved server
+  conflicts remain readable. Clean deleted notes are hidden rather than recovered.
+- Open **Recovery drafts** from Synced Classes or Synced Notes, choose
+  **Copy into active class**, select a class, and confirm. This creates a new note
+  UUID with the local title/content/tags. The original recovery draft remains,
+  including any saved server conflict. A recovery draft can be copied once;
+  repeated clicks cannot create duplicates. Sync to upload the copied note.
+- Recovery drafts are local, not cloud backups. Clearing app storage or
+  uninstalling loses unsynchronized notes and recovery drafts.
+
+Room schema exports cover both databases. The account sync database migrates
+explicitly from version 1 to 2, preserving classes, pending requests/conflicts,
+and class cursors while adding note tables. The original study database stays at
 version 1 and is not destructively migrated. Do not reset/reseed the backend to
 reuse account IDs while keeping device caches: reset only the separate sync cache
 for disposable testing, or use a fresh emulator. An installation points to one
@@ -184,8 +294,11 @@ backend environment; multi-server switching is not supported.
 The opt-in live tests use two independent Room stores/sessions as two devices,
 exercise offline failure/retry, lost acknowledgements plus reopening, concurrent
 edits, local/server conflict choices, edit/delete conflicts, account isolation,
-and import consent through the actual UI. Backend tests verify pagination and
-the version preconditions on ordinary course update/delete routes.
+and import consent through the actual UI. Note tests additionally cover rotation,
+title/content/tag round trips, concurrent edits, deleted-parent races (including a
+pending class conflict), recovery copying, maximum escaped Unicode content,
+and the version-1 database migration. Backend tests verify note/class pagination,
+idempotency, and version preconditions on ordinary update/delete routes.
 
 ## Open and build
 

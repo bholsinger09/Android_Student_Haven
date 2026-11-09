@@ -76,6 +76,20 @@ public final class AuthRepository {
 
     public void forget() throws BackendException { store.clear(); }
 
+    void acceptSocialSession(JSONObject response) throws BackendException {
+        try {
+            account(response);
+            if (response.getString("token").isEmpty()
+                    || !"Bearer".equals(response.getString("token_type"))
+                    || !Instant.parse(response.getString("expires_at")).isAfter(Instant.now())) {
+                throw new JSONException("Invalid social session");
+            }
+            store.save(response.toString());
+        } catch (JSONException | java.time.format.DateTimeParseException exception) {
+            throw new BackendException("The backend returned an invalid social sign-in session.", exception);
+        }
+    }
+
     public JSONObject requestFor(String accountId, String method, String path, JSONObject body)
             throws BackendException {
         JSONObject session = session();

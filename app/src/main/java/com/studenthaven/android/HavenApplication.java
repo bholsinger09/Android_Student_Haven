@@ -11,6 +11,7 @@ import com.studenthaven.android.data.BackendClient;
 import com.studenthaven.android.data.SessionStore;
 import com.studenthaven.android.data.ClassSyncDatabase;
 import com.studenthaven.android.data.ClassSyncRepository;
+import com.studenthaven.android.data.SocialAuthRepository;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -20,6 +21,7 @@ public final class HavenApplication extends Application {
     private final ExecutorService authIo = Executors.newSingleThreadExecutor();
     private AuthRepository auth;
     private ClassSyncRepository classSync;
+    private SocialAuthRepository socialAuth;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -28,8 +30,9 @@ public final class HavenApplication extends Application {
                 .build();
         repository = new RoomStudyRepository(database);
         auth = new AuthRepository(new BackendClient(BuildConfig.BACKEND_URL), new SessionStore(this));
+        socialAuth = new SocialAuthRepository(this, new BackendClient(BuildConfig.BACKEND_URL), auth);
         ClassSyncDatabase syncDatabase = Room.databaseBuilder(this, ClassSyncDatabase.class,
-                "student-haven-class-sync.db").build();
+                "student-haven-class-sync.db").addMigrations(ClassSyncDatabase.MIGRATION_1_2).build();
         classSync = new ClassSyncRepository(syncDatabase, auth);
     }
 
@@ -38,4 +41,5 @@ public final class HavenApplication extends Application {
     public AuthRepository auth() { return auth; }
     public ExecutorService authIo() { return authIo; }
     public ClassSyncRepository classSync() { return classSync; }
+    public SocialAuthRepository socialAuth() { return socialAuth; }
 }

@@ -34,6 +34,10 @@ public final class ClassSyncDialogFragment extends FullScreenDialogFragment {
             submitting = savedInstanceState.getBoolean("submitting");
         }
         binding.syncClose.setOnClickListener(view -> dismiss());
+        getParentFragmentManager().setFragmentResultListener("synced-notes-closed", this,
+                (key, result) -> model.reload());
+        binding.syncRecovery.setOnClickListener(view -> NoteSyncDialogFragment.forClass(null)
+                .show(getParentFragmentManager(), "note-recovery"));
         binding.syncNow.setOnClickListener(view -> model.sync());
         binding.syncImport.setOnClickListener(view -> new AlertDialog.Builder(requireContext())
                 .setTitle(R.string.sync_import).setMessage(R.string.sync_import_warning)
@@ -65,7 +69,7 @@ public final class ClassSyncDialogFragment extends FullScreenDialogFragment {
                 : state.account().email());
         binding.syncStatus.setText(state.busy() ? getString(R.string.sync_working) : state.message());
         binding.syncStatus.setTextColor(requireContext().getColor(state.error() ? R.color.pink : R.color.purple));
-        for (View control : new View[]{binding.syncNow, binding.syncImport, binding.syncSave,
+        for (View control : new View[]{binding.syncNow, binding.syncImport, binding.syncSave, binding.syncRecovery,
                 binding.syncName, binding.syncCode, binding.syncProfessor, binding.syncLocation,
                 binding.syncCancelEdit}) control.setEnabled(enabled);
         binding.syncClose.setEnabled(!state.busy());
@@ -97,6 +101,8 @@ public final class ClassSyncDialogFragment extends FullScreenDialogFragment {
             if (item.conflict != null) {
                 action(card, R.string.sync_resolve, enabled, () -> conflict(item));
             } else if (!item.deleted) {
+                action(card, R.string.synced_notes, enabled, () -> NoteSyncDialogFragment.forClass(item.id)
+                        .show(getParentFragmentManager(), "synced-notes"));
                 action(card, R.string.edit, enabled, () -> {
                     editingId = item.id;
                     binding.syncName.setText(item.name);
@@ -176,7 +182,7 @@ public final class ClassSyncDialogFragment extends FullScreenDialogFragment {
 
     @Override public void onDismiss(@NonNull android.content.DialogInterface dialog) {
         super.onDismiss(dialog);
-        if (getParentFragment() instanceof AccountDialogFragment parent) parent.refreshAccount();
+        new ViewModelProvider(requireActivity()).get(AccountViewModel.class).refresh();
     }
 
     @Override public void onDestroyView() {
