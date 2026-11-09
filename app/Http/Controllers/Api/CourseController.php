@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
+use App\Models\User;
+use App\Services\CourseWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class CourseController extends Controller
 {
@@ -14,10 +18,14 @@ class CourseController extends Controller
         return response()->json($request->user()->courses()->orderBy('id')->paginate(50));
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, CourseWriter $writer): JsonResponse
     {
         $data = $this->validated($request);
-        $course = $request->user()->courses()->create($data);
+        $course = DB::transaction(function () use ($request, $data, $writer) {
+            $owner = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+
+            return $writer->write($owner, new Course, $data, false);
+        });
 
         return response()->json(['data' => $course->fresh()], 201);
     }
@@ -27,19 +35,34 @@ class CourseController extends Controller
         return response()->json(['data' => $request->user()->courses()->findOrFail($course)]);
     }
 
-    public function update(Request $request, string $course): JsonResponse
+    public function update(Request $request, string $course, CourseWriter $writer): JsonResponse
     {
-        $model = $request->user()->courses()->findOrFail($course);
-        $model->update($this->validated($request, true));
+        return DB::transaction(function () use ($request, $course, $writer) {
+            $owner = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+            $model = $owner->courses()->findOrFail($course);
+            $version = $request->validate(['version' => ['required', 'integer', 'min:1']])['version'];
+            if ($version != $model->version) {
+                return response()->json(['message' => 'This class changed on another device.', 'conflict' => $model], 409);
+            }
+            $saved = $writer->write($owner, $model, $this->validated($request, true), false);
 
-        return response()->json(['data' => $model->fresh()]);
+            return response()->json(['data' => $saved]);
+        });
     }
 
-    public function destroy(Request $request, string $course): Response
+    public function destroy(Request $request, string $course, CourseWriter $writer): Response|JsonResponse
     {
-        $request->user()->courses()->findOrFail($course)->delete();
+        return DB::transaction(function () use ($request, $course, $writer) {
+            $owner = User::whereKey($request->user()->id)->lockForUpdate()->firstOrFail();
+            $model = $owner->courses()->findOrFail($course);
+            $version = $request->validate(['version' => ['required', 'integer', 'min:1']])['version'];
+            if ($version != $model->version) {
+                return response()->json(['message' => 'This class changed on another device.', 'conflict' => $model], 409);
+            }
+            $writer->write($owner, $model, [], true);
 
-        return response()->noContent();
+            return response()->noContent();
+        });
     }
 
     private function validated(Request $request, bool $updating = false): array

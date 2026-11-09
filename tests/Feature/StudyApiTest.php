@@ -127,10 +127,10 @@ class StudyApiTest extends TestCase
         $this->assertDatabaseHas('courses', ['id' => $id, 'user_id' => $user->id]);
         $this->getJson('/api/v1/courses')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson("/api/v1/courses/$id")->assertOk();
-        $this->patchJson("/api/v1/courses/$id", ['name' => 'Chemistry', 'user_id' => $other->id])
+        $this->patchJson("/api/v1/courses/$id", ['name' => 'Chemistry', 'user_id' => $other->id, 'version' => 1])
             ->assertOk()->assertJsonPath('data.name', 'Chemistry');
         $this->assertDatabaseHas('courses', ['id' => $id, 'user_id' => $user->id]);
-        $this->deleteJson("/api/v1/courses/$id")->assertNoContent();
+        $this->deleteJson("/api/v1/courses/$id", ['version' => 2])->assertNoContent();
         $this->getJson("/api/v1/courses/$id")->assertNotFound();
         $this->getJson('/api/v1/courses/not-a-uuid')->assertNotFound();
     }
@@ -189,7 +189,7 @@ class StudyApiTest extends TestCase
         $this->assertDatabaseHas('flashcards', ['id' => $card, 'source_note_id' => null]);
         $this->postJson("/api/v1/courses/$course/assignments", ['name' => 'Quiz'])->assertCreated();
         $this->postJson("/api/v1/courses/$course/notes", ['title' => 'Another'])->assertCreated();
-        $this->deleteJson("/api/v1/courses/$course")->assertNoContent();
+        $this->deleteJson("/api/v1/courses/$course", ['version' => 1])->assertNoContent();
         foreach (['notes', 'flashcards', 'assignments'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }

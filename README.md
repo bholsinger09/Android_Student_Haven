@@ -4,9 +4,10 @@ Standalone JSON API built with **Laravel 13, PHP 8.3+, Laravel Sanctum, and
 PostgreSQL**. This directory is a separate local checkout of the public
 [`backend` branch](https://github.com/bholsinger09/Android_Student_Haven/tree/backend)
 in the Android repository. Its history is independent of the Android app branches;
-do not merge it into the app branches. The Android `feature/local-backend-auth`
-branch supports local authentication against this API; study-data synchronization
-and iOS integration are not implemented.
+do not merge it into the app branches. This work is on `backend-class-sync`,
+paired with Android `feature/class-sync`. The Android app supports local
+authentication and a separate account class-sync workspace; synchronization of
+notes/cards/assignments and iOS integration are not implemented.
 
 ## Scope
 
@@ -21,9 +22,11 @@ Implemented:
 - Course deletion cascades to its notes, cards, and assignments. Note deletion
   keeps flashcards and clears their source-note reference.
 - PostgreSQL migrations, foreign keys, numeric constraints, and API tests.
+- Class synchronization with client UUIDs, durable idempotency receipts, per-account
+  ordered change feeds, deletion tombstones, and explicit version conflicts.
 
-Not implemented: Android/iOS integration, CloudKit migration, offline sync,
-client-ID import/idempotent writes, conflict resolution, deletion tombstones,
+Not implemented: iOS integration, CloudKit migration, synchronization of notes,
+cards or assignments, automatic background sync,
 shared groups/chat, attachments, email verification, password reset, push
 notifications, or production hosting. Review scheduling and grade calculation
 remain client responsibilities; this API stores their data.
@@ -130,8 +133,9 @@ Text limits: names/titles 255 characters, course code 100, note content 200,000,
 card front/back 20,000 each, and 50 tags of at most 100 characters each.
 Empty/null course metadata and note content normalize to empty strings.
 
-The API assigns IDs and ownership; supplied IDs, `user_id`, and `course_id` are
-not writable. Child resources cannot move between courses. Unknown fields are
+The ordinary CRUD API assigns IDs and ownership; supplied IDs, `user_id`, and `course_id`
+are not writable. The separate sync API accepts client-generated class UUIDs.
+Child resources cannot move between courses. Unknown fields are
 ignored rather than persisted. Collections contain only the authenticated user's
 data. Another user's course/resource, a mismatched child/parent, or malformed UUID
 returns 404.
@@ -142,6 +146,79 @@ read/update 200, and delete/logout 204 with no body. Lists use Laravel's paginat
 fixed at 50; use `?page=2`. Validation returns 422 with `message` and `errors`,
 missing/expired authentication returns 401, and throttling returns 429.
 Private successful responses use `Cache-Control: no-store, private`.
+
+### Class synchronization protocol
+
+The class-only sync API is used by Android's separate Synced Classes workspace.
+All endpoints require the same bearer authentication and user rate limit.
+Existing course UUIDs are preserved by migration; previous records enter the
+initial feed. No client-owned timestamps are used to order changes.
+
+`GET /sync/courses?after=0` returns:
+
+```json
+{
+  "data": [{"id": "<uuid>", "user_id": 1, "name": "Biology", "code": "BIO101",
+            "professor": "", "location": "", "version": 1, "sync_revision": 1,
+            "deleted_at": null, "created_at": "...", "updated_at": "..."}],
+  "cursor": 1,
+  "has_more": false
+}
+```
+
+Feed pages have at most 100 records, ordered by an increasing per-account
+revision. Persist applied records and the returned cursor in one local
+transaction. Fetch the next page while `has_more` is true. The feed contains the
+latest state per class, not an audit log of every intermediate edit. Start at
+zero for a new cache, keep that account's cursor, and never reuse it for another
+account. Tombstones are included; ordinary CRUD queries hide deleted classes.
+
+`PUT /sync/courses/{client-generated-uuid}` accepts:
+
+```json
+{
+  "mutation_id": "<new uuid for this exact write>",
+  "base_version": 0,
+  "deleted": false,
+  "name": "Biology",
+  "code": "BIO101",
+  "professor": "",
+  "location": ""
+}
+```
+
+Use base version 0 for creation and the last acknowledged version for edits or
+deletes. Non-deleted writes are full metadata replacements; omitted optional
+fields become empty strings. Deletions require `deleted: true` and a matching
+version. A successful response is `200 {"data": <saved class>}`. Reuse the same
+mutation UUID and **identical payload** when retrying an unacknowledged request;
+the original successful acknowledgement is replayed without applying another
+change. UUID reuse with different content returns 409 without a `conflict` object.
+
+Stale writes return `409 {"message": "...", "conflict": <current server class>}`.
+The server does not modify either record on rejection; the client must preserve
+its local draft. Choosing local submits a fresh mutation UUID against the chosen
+server version. Choosing server discards the local pending change. Cancel keeps
+both for later. If the server changes again, another conflict is returned.
+An unknown class with a nonzero base version returns `conflict: null`; clients
+must treat that as a protocol/state error, not silently recreate data.
+
+Deleted class metadata remains as a versioned tombstone so offline devices cannot
+resurrect it accidentally. Explicit restoration is a non-deleted write against
+the tombstone's current version. Deletion permanently removes associated server
+notes, cards, and assignments; restoring metadata cannot restore those records.
+Tombstones and successful mutation receipts are retained until account deletion.
+Introduce a coordinated retention/reset protocol before pruning either.
+
+**Compatibility change:** ordinary `/courses/{id}` PATCH/PUT/DELETE requests now
+require `version` in the JSON body. Missing versions return 422 and stale versions
+return 409 with `conflict`. This prevents non-sync clients from bypassing conflict
+checks. Ordinary course creates/updates/deletes also appear in the sync feed.
+All account study writes take a transactional user-row lock so assigned feed
+revisions commit in order, and child creation cannot race soft deletion.
+Rolling this migration back permanently removes tombstones rather than restoring
+deleted classes. A subsequent reapplication renumbers versions/revisions, so
+clients must rebuild their sync caches; do not roll it back with active clients.
 
 Limits: registration 5 requests/minute/IP; login 5/minute/email+IP and
 30/minute/IP overall; authenticated API 120/minute/user. These use Laravel's
@@ -195,9 +272,9 @@ ungraded scores, timestamp offsets, and cascading deletes.
   deletion policy, monitoring, and rate-limit behavior behind the real proxy.
 - Add verified email and password recovery with a real mail provider before
   public account rollout. Schedule `sanctum:prune-expired --hours=24` regularly.
-- Design mobile account isolation, initial local-data import, offline outbox,
-  idempotency, conflicts, and deletion synchronization before connecting Room.
-  Add equivalent iOS integration separately; existing CloudKit data is not imported.
+- Extend the tested class-only sync protocol to related study data before
+  integrating the main Room study space. Add equivalent iOS integration separately;
+  existing CloudKit data is not imported.
 
 No hosting account or paid service is provisioned. Source publication does not
 deploy the API, upload a database, or publish local credentials.
