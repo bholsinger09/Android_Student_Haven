@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\SessionToken;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Timebox;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -23,7 +25,7 @@ class AuthController extends Controller
         }
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->whereNull('auth_provider')],
             'password' => [...$this->passwordRules(), 'confirmed', Password::min(12)],
             'device_name' => ['required', 'string', 'max:100'],
         ]);
@@ -44,7 +46,7 @@ class AuthController extends Controller
         ]);
 
         $user = (new Timebox)->call(function (Timebox $timebox) use ($data) {
-            $user = User::where('email', mb_strtolower(trim($data['email'])))->first();
+            $user = User::whereNull('auth_provider')->where('email', mb_strtolower(trim($data['email'])))->first();
             if (! $user || ! Hash::check($data['password'], $user->password)) {
                 throw ValidationException::withMessages(['email' => ['Invalid email or password.']]);
             }
@@ -81,9 +83,15 @@ class AuthController extends Controller
 
     public function destroy(Request $request): Response
     {
-        $data = $request->validate(['password' => $this->passwordRules()]);
-        if (! Hash::check($data['password'], $request->user()->password)) {
-            throw ValidationException::withMessages(['password' => ['Incorrect password.']]);
+        if ($request->user()->auth_provider !== null) {
+            if ($request->user()->currentAccessToken()->created_at->lt(now()->subMinutes(5))) {
+                throw ValidationException::withMessages(['authentication' => ['Sign in with your provider again before deleting your account.']]);
+            }
+        } else {
+            $data = $request->validate(['password' => $this->passwordRules()]);
+            if (! Hash::check($data['password'], $request->user()->password)) {
+                throw ValidationException::withMessages(['password' => ['Incorrect password.']]);
+            }
         }
         DB::transaction(function () use ($request) {
             $request->user()->tokens()->delete();
@@ -95,15 +103,7 @@ class AuthController extends Controller
 
     private function tokenResponse(User $user, string $deviceName, int $status = 200): JsonResponse
     {
-        $expiresAt = now()->addDays(30);
-        $token = $user->createToken($deviceName, ['*'], $expiresAt);
-
-        return response()->json([
-            'data' => $user,
-            'token' => $token->plainTextToken,
-            'token_type' => 'Bearer',
-            'expires_at' => $expiresAt->toISOString(),
-        ], $status)->header('Cache-Control', 'no-store');
+        return app(SessionToken::class)->response($user, $deviceName, $status);
     }
 
     private function passwordRules(): array

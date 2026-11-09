@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Note;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,9 @@ class StudyApiTest extends TestCase
         $id = $this->postJson($base, $create)->assertCreated()->json('data.id');
         $this->getJson($base)->assertOk()->assertJsonCount(1, 'data');
         $this->getJson("$base/$id")->assertOk();
+        if ($resource === 'notes') {
+            $update['version'] = 1;
+        }
         $this->patchJson("$base/$id", $update)->assertOk();
         foreach (['get', 'patch', 'delete'] as $method) {
             $this->json(strtoupper($method), "/api/v1/courses/$otherCourse/$resource/$id", $update)
@@ -172,8 +176,12 @@ class StudyApiTest extends TestCase
         $this->deleteJson("$base/$id")->assertNotFound();
         $this->withToken($owner->createToken('return')->plainTextToken);
         app('auth')->forgetGuards();
-        $this->deleteJson("$base/$id")->assertNoContent();
-        $this->assertDatabaseMissing($resource, ['id' => $id]);
+        $this->deleteJson("$base/$id", $resource === 'notes' ? ['version' => 2] : [])->assertNoContent();
+        if ($resource === 'notes') {
+            $this->assertSoftDeleted('notes', ['id' => $id]);
+        } else {
+            $this->assertDatabaseMissing($resource, ['id' => $id]);
+        }
     }
 
     public function test_note_deletion_preserves_cards_and_course_deletion_cascades(): void
@@ -185,12 +193,13 @@ class StudyApiTest extends TestCase
         $card = $this->postJson("/api/v1/courses/$course/flashcards", [
             'front' => 'Cell?', 'back' => 'Unit of life', 'source_note_id' => $note,
         ])->assertCreated()->assertJsonPath('data.ease_factor', 2.5)->json('data.id');
-        $this->deleteJson("/api/v1/courses/$course/notes/$note")->assertNoContent();
+        $this->deleteJson("/api/v1/courses/$course/notes/$note", ['version' => 1])->assertNoContent();
         $this->assertDatabaseHas('flashcards', ['id' => $card, 'source_note_id' => null]);
         $this->postJson("/api/v1/courses/$course/assignments", ['name' => 'Quiz'])->assertCreated();
         $this->postJson("/api/v1/courses/$course/notes", ['title' => 'Another'])->assertCreated();
         $this->deleteJson("/api/v1/courses/$course", ['version' => 1])->assertNoContent();
-        foreach (['notes', 'flashcards', 'assignments'] as $table) {
+        $this->assertSame(0, Note::count());
+        foreach (['flashcards', 'assignments'] as $table) {
             $this->assertDatabaseCount($table, 0);
         }
     }

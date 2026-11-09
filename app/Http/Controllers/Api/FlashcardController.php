@@ -54,7 +54,7 @@ class FlashcardController extends Controller
             'front' => [$updating ? 'sometimes' : 'required', 'required', 'string', 'max:20000'],
             'back' => [$updating ? 'sometimes' : 'required', 'required', 'string', 'max:20000'],
             'source_note_id' => ['sometimes', 'nullable', 'uuid',
-                Rule::exists('notes', 'id')->where('course_id', $course)],
+                Rule::exists('notes', 'id')->where('course_id', $course)->whereNull('deleted_at')],
             'repetitions' => ['sometimes', 'required', 'integer', 'min:0', 'max:1000000'],
             'ease_factor' => ['sometimes', 'required', 'numeric', 'between:1.3,100'],
             'interval_days' => ['sometimes', 'required', 'integer', 'min:0', 'max:1000000'],

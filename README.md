@@ -4,28 +4,36 @@ Standalone JSON API built with **Laravel 13, PHP 8.3+, Laravel Sanctum, and
 PostgreSQL**. This directory is a separate local checkout of the public
 [`backend` branch](https://github.com/bholsinger09/Android_Student_Haven/tree/backend)
 in the Android repository. Its history is independent of the Android app branches;
-do not merge it into the app branches. This work is on `backend-class-sync`,
-paired with Android `feature/class-sync`. The Android app supports local
-authentication and a separate account class-sync workspace; synchronization of
-notes/cards/assignments and iOS integration are not implemented.
+do not merge it into the app branches. This work is on `backend-note-sync`,
+paired with Android `feature/note-sync`. The Android app opens with welcome
+sign-in/create-account and returns there on sign-out. Backend connectivity checks
+are terminal-only; the separate account classes-and-notes workspace is retained
+for automated tests without an app navigation entry;
+card/assignment synchronization and iOS integration are not implemented.
 
 ## Scope
 
 Implemented:
 
 - Registration and login with hashed passwords and hashed, revocable bearer tokens.
+- Google and Microsoft browser sign-in broker (requires provider registrations).
+  Microsoft supports personal and work/school accounts. Provider identities never
+  automatically link to password accounts or each other by email.
 - Thirty-day device tokens; logout revokes the current token.
-- Profile name/college updates and password-confirmed account deletion.
+- Profile name/college updates; password-confirmed deletion for password accounts,
+  or a provider sign-in within the last five minutes for provider accounts.
 - Private classes (called `courses` in the API), notes/tags, flashcards/review
   state, and assignments/grades, using server-generated UUIDs.
 - Ownership-scoped CRUD, fixed-size pagination, validation, and rate limits.
-- Course deletion cascades to its notes, cards, and assignments. Note deletion
-  keeps flashcards and clears their source-note reference.
+- Course deletion tombstones its live notes and permanently deletes its cards and
+  assignments. Note deletion keeps flashcards and clears their source-note reference.
 - PostgreSQL migrations, foreign keys, numeric constraints, and API tests.
 - Class synchronization with client UUIDs, durable idempotency receipts, per-account
   ordered change feeds, deletion tombstones, and explicit version conflicts.
+- Equivalent note synchronization for titles, plain-text content, and tags, with
+  deleted-parent rejection so clients can retain local recovery drafts.
 
-Not implemented: iOS integration, CloudKit migration, synchronization of notes,
+Not implemented: iOS integration, CloudKit migration, synchronization of
 cards or assignments, automatic background sync,
 shared groups/chat, attachments, email verification, password reset, push
 notifications, or production hosting. Review scheduling and grade calculation
@@ -69,7 +77,8 @@ when reproducing this version.
 ## API v1
 
 Base path: `/api/v1`. Send `Accept: application/json` and
-`Content-Type: application/json`. All routes except registration/login require
+`Content-Type: application/json`. All routes except registration/login and the
+social sign-in endpoints require
 `Authorization: Bearer <token>`. Native mobile bearer tokens are supported;
 browser cookie/session authentication is not enabled.
 
@@ -82,7 +91,7 @@ browser cookie/session authentication is not enabled.
 | POST | `/auth/logout` | Revokes only the supplied device token |
 | GET | `/me` | Current profile |
 | PATCH | `/me` | Optional `name`, nullable `college` |
-| DELETE | `/me` | Requires `password`; permanently removes account, owned study data, and all tokens |
+| DELETE | `/me` | Password accounts require `password`; provider accounts require a device token issued within the last five minutes. Permanently removes account, owned study data, and all tokens |
 
 Passwords must be at least 12 characters on registration and at most 72 bytes
 (bcrypt's limit); null characters are rejected. Emails are normalized to
@@ -102,6 +111,106 @@ fields. Passwords and remember tokens are never returned. Store mobile tokens
 in platform-protected storage. Tokens expire after 30 days; there is no refresh
 endpoint yet, so clients must sign in again. Account email/password changes are
 not part of this initial API.
+
+### Google and Microsoft sign-in setup
+
+These are **confidential Web OAuth clients on this backend**, not Android client
+registrations. Android opens the provider in a system browser; provider passwords
+and client secrets never enter the Android app. No provider registration or
+credentials ship with this repository. An unconfigured provider returns HTTP 503,
+not a simulated account.
+
+**Google**
+
+1. In [Google Cloud Console](https://console.cloud.google.com/auth/overview), create
+   or select a project and configure Google Auth Platform branding/audience.
+   For development, keep the app in Testing and add your Google account as a test user.
+2. Create an OAuth client with application type **Web application**.
+3. Add this exact authorized redirect URI for the local debug setup:
+   `http://localhost:8088/api/v1/auth/social/google/callback`.
+   No JavaScript origin is needed for this server-side flow.
+4. Put the client ID and secret directly in your local, ignored `.env` as
+   `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. Set `GOOGLE_REDIRECT_URI` to that
+   same URI. Request only the default OpenID/profile/email scopes.
+
+**Microsoft**
+
+1. In [Microsoft Entra admin center](https://entra.microsoft.com/), select your
+   directory and open **App registrations > New registration**. Registration may
+   require an Entra directory and permission from its administrator.
+2. Select **Accounts in any organizational directory and personal Microsoft
+   accounts**. This backend uses the `common` tenant, not a single organization.
+3. Add a **Web** redirect URI:
+   `http://localhost:8088/api/v1/auth/social/microsoft/callback`.
+   Do not register the app's custom scheme as the provider redirect.
+4. Use delegated Microsoft Graph **User.Read** plus OpenID/profile scopes.
+   Organizational policies may require administrator consent.
+5. Create a client secret under **Certificates & secrets**. Save its **value**
+   (not the secret ID) directly in `.env` as `MICROSOFT_CLIENT_SECRET`.
+   Set `MICROSOFT_CLIENT_ID` to Application (client) ID, and
+   `MICROSOFT_REDIRECT_URI` to the exact URI above. Track and rotate the secret
+   before its expiration.
+
+Never paste secrets into chat, commit them, or place them in Android resources,
+Gradle settings, screenshots, logs, or shell history. After editing `.env`, run
+`php artisan config:clear` and restart the local server. Run `php artisan migrate`
+before testing, start Laravel on loopback port 8088, and run
+`adb reverse tcp:8088 tcp:8088`. The browser's `localhost:8088` callback then reaches
+this backend through the connected emulator/device. Both providers must have the
+exact registered callback, including scheme, port and path.
+
+For production, register **HTTPS backend-domain callbacks**, update the respective
+environment values, configure the Android HTTPS backend URL, disable Laravel debug
+output, and deploy with the normal production web server/security configuration.
+Exclude OAuth callback query strings from web-server/proxy access logs and
+error-reporting tools; they contain short-lived authorization codes and state.
+The local HTTP callback exception is allowed only in Laravel `local`/`testing`.
+Do not expose the development PHP server to the Internet. Live provider sign-in
+must be tested after these registrations; automated adapter tests use mocked
+provider HTTP responses and are not proof that your console settings work.
+
+### Social sign-in protocol
+
+| Method | Path | Body / behavior |
+|---|---|---|
+| POST | `/auth/social/{provider}/start` | `provider` is `google` or `microsoft`; body: `challenge`, a base64url SHA-256 hash of a random 32-byte verifier encoded as base64url without padding. Returns `attempt_id` and `authorization_url` |
+| GET | `/auth/social/{provider}/callback` | Registered provider callback; consumes an unpredictable, hashed, single-use `state` and exchanges the authorization code server-side |
+| POST | `/auth/social/exchange` | `attempt_id`, original 43-character `verifier`, `device_name`; returns the ordinary thirty-day Sanctum session after authorization |
+
+Attempts expire in ten minutes. The app persists the verifier encrypted before
+opening the HTTPS provider URL. After callback validation the backend returns
+only `studenthaven://oauth/callback?attempt=<uuid>` to Android, never an API token,
+provider token, code, email, or secret. An intercepted custom-scheme callback
+alone cannot redeem the session: the verifier is required. This is a PKCE-style
+**app-to-backend handoff binding**; provider code redemption itself uses the
+confidential Web client secret, not a claimed provider PKCE implementation.
+
+Google accounts use the provider's stable userinfo subject. Microsoft ID tokens
+are signature/issuer/expiry validated, require the exact client audience, and use
+tenant ID plus object ID, cross-checked against Graph. Provider access/refresh
+tokens are not persisted. Email is profile metadata, not an identity/linking key;
+Google, Microsoft, and password accounts can all share an email while having
+separate server-owned study records. The migration preserves existing password
+account IDs/passwords and retains password-email uniqueness within that namespace.
+Rollback is blocked while provider accounts exist.
+
+Pending/processing exchanges return 409 with `code: authorization_pending`; keep
+the proof and retry after browser sign-in. Cancelled, failed, expired or consumed
+attempts return 400 and require a new sign-in. Exchanges are single use: if the
+server commits a token but the acknowledgement is lost, restart provider sign-in
+rather than attempting to replay that exchange. Network errors retain Android's
+pending proof for explicit retry; **Cancel provider sign-in** discards it locally.
+After cancellation the app no longer has the proof needed to redeem that attempt;
+the browser and server attempt are not cancelled, and provider cookies remain.
+
+Social endpoints allow 30 requests/minute/IP. Expired attempt rows are pruned
+hourly by Laravel's scheduler; configure the deployment scheduler, for example
+`* * * * * cd /path/to/backend && php artisan schedule:run >> /dev/null 2>&1`.
+Use `php artisan schedule:work` during local development if automatic cleanup is
+desired. Expiry is enforced even when the scheduler is not running.
+App sign-out revokes only the current Sanctum token, not Google/Microsoft browser
+cookies or other devices. MFA remains governed by the selected provider/account
+policy; choosing provider sign-in does not independently force MFA on every login.
 
 ### Study resources
 
@@ -132,9 +241,10 @@ Scores, maximums, and weights are bounded at 1,000,000,000.
 Text limits: names/titles 255 characters, course code 100, note content 200,000,
 card front/back 20,000 each, and 50 tags of at most 100 characters each.
 Empty/null course metadata and note content normalize to empty strings.
+Nonempty note content is not trimmed; indentation and trailing newlines are retained.
 
 The ordinary CRUD API assigns IDs and ownership; supplied IDs, `user_id`, and `course_id`
-are not writable. The separate sync API accepts client-generated class UUIDs.
+are not writable. The separate sync API accepts client-generated class/note UUIDs.
 Child resources cannot move between courses. Unknown fields are
 ignored rather than persisted. Collections contain only the authenticated user's
 data. Another user's course/resource, a mismatched child/parent, or malformed UUID
@@ -149,7 +259,7 @@ Private successful responses use `Cache-Control: no-store, private`.
 
 ### Class synchronization protocol
 
-The class-only sync API is used by Android's separate Synced Classes workspace.
+The class sync API is used by Android's separate Synced Classes workspace.
 All endpoints require the same bearer authentication and user rate limit.
 Existing course UUIDs are preserved by migration; previous records enter the
 initial feed. No client-owned timestamps are used to order changes.
@@ -205,8 +315,8 @@ must treat that as a protocol/state error, not silently recreate data.
 
 Deleted class metadata remains as a versioned tombstone so offline devices cannot
 resurrect it accidentally. Explicit restoration is a non-deleted write against
-the tombstone's current version. Deletion permanently removes associated server
-notes, cards, and assignments; restoring metadata cannot restore those records.
+the tombstone's current version. Deletion tombstones all live notes and permanently
+removes associated cards and assignments; restoring metadata does not restore those records.
 Tombstones and successful mutation receipts are retained until account deletion.
 Introduce a coordinated retention/reset protocol before pruning either.
 
@@ -219,6 +329,67 @@ revisions commit in order, and child creation cannot race soft deletion.
 Rolling this migration back permanently removes tombstones rather than restoring
 deleted classes. A subsequent reapplication renumbers versions/revisions, so
 clients must rebuild their sync caches; do not roll it back with active clients.
+
+### Note synchronization protocol
+
+`GET /sync/notes?after=0` uses the same `data`, `cursor`, and `has_more` envelope,
+with a **separate per-account note revision/cursor**. It returns the latest state
+per note, including tombstones, ordered by `sync_revision`, **one note per page**.
+One maximum-sized escaped Unicode note fits within the Android client's 4 MiB
+response limit. Continue while `has_more` is true; apply each page and its cursor
+atomically. Notes contain `id`, `course_id`, `user_id`, `title`, `content`, `tags`,
+`version`, `sync_revision`, `deleted_at`, timestamps, and `parent_deleted`.
+`parent_deleted` reflects the parent's deletion state when the payload is built.
+Migration preserves existing note IDs and puts existing notes in the initial feed.
+
+`PUT /sync/courses/{course-uuid}/notes/{client-note-uuid}` accepts:
+
+```json
+{
+  "mutation_id": "<new uuid for this exact write>",
+  "base_version": 0,
+  "deleted": false,
+  "title": "Cells",
+  "content": "Cell: unit of life\n",
+  "tags": ["biology", "exam"]
+}
+```
+
+Non-deleted writes fully replace title/content/tags; omitted content/tags become
+`""`/`[]`. Use base version 0 for creation and the last acknowledged version for
+edits/deletes. Note IDs cannot move between classes. Success returns
+`200 {"data": <saved note>}`. Receipts, replay rules, ownership, stale-version
+conflicts, and explicit local/server choices match the class protocol, using a
+separate note-mutation receipt table. No write is accepted on a stale base version.
+
+An owned but deleted parent rejects a new mutation with
+`409 {"code": "parent_deleted", "parent": <class tombstone>, "message": "..."}`.
+The server stores neither the rejected mutation nor a replacement class/note.
+A previously successful mutation still replays its exact original acknowledgement
+even after parent deletion; clients must continue pulling current feeds rather than
+treating old acknowledgements as current state.
+
+The Android client synchronizes classes before notes, preserves pending local
+notes as recovery drafts on parent deletion (including unsent notes and saved
+conflicts), and blocks uploads from those drafts. It also persists an
+acknowledgement-awaiting-feed flag to protect an acknowledged draft if deletion
+arrives between a class pull and the note feed, including across restart.
+An explicit recovery-copy action creates a new UUID in a chosen active class;
+it never automatically restores the deleted parent or overwrites the original draft.
+Recovery drafts live only in that device's cache; the API does not back them up.
+
+**Compatibility change:** ordinary note PATCH/PUT/DELETE now require `version`.
+Missing versions return 422; stale versions return 409 with `conflict`. All note
+CRUD writes enter the note feed. Ordinary lists hide note tombstones, and cards
+cannot reference a tombstoned source note. Deleting a note clears existing card
+source references even though the note remains as a tombstone. Explicitly
+restoring class metadata never restores notes automatically.
+
+Note tombstones and receipts are retained until account deletion. Note migration
+rollback permanently deletes tombstones; reapplying renumbers revisions, so
+clients must rebuild the account sync cache. Do not roll back with active clients.
+Configure PHP and the reverse proxy to accept at least a 4 MiB JSON request body;
+test their actual limits with maximum Unicode notes before deployment.
 
 Limits: registration 5 requests/minute/IP; login 5/minute/email+IP and
 30/minute/IP overall; authenticated API 120/minute/user. These use Laravel's
@@ -256,7 +427,10 @@ any database name other than the dedicated test database before migrations run.
 
 Tests cover account/token lifecycle, expired tokens, ownership boundaries,
 nested-resource CRUD, validation, bounded pagination, rate limits, extra credit,
-ungraded scores, timestamp offsets, and cascading deletes.
+ungraded scores, timestamp offsets, and cascading deletes. Sync coverage includes
+note/class idempotency, version conflicts, account/parent isolation, tombstones,
+deleted-parent rejection, acknowledgement replay after deletion, pagination,
+maximum escaped Unicode content, whitespace preservation, and migration rollback/backfill.
 
 ## Before production deployment
 
@@ -272,7 +446,7 @@ ungraded scores, timestamp offsets, and cascading deletes.
   deletion policy, monitoring, and rate-limit behavior behind the real proxy.
 - Add verified email and password recovery with a real mail provider before
   public account rollout. Schedule `sanctum:prune-expired --hours=24` regularly.
-- Extend the tested class-only sync protocol to related study data before
+- Extend the tested class/note sync protocol to cards and assignments before
   integrating the main Room study space. Add equivalent iOS integration separately;
   existing CloudKit data is not imported.
 

@@ -18,7 +18,11 @@ class CourseWriter
         $owner->save();
         $course->sync_revision = $owner->sync_revision;
         if ($deleted) {
-            $course->notes()->delete();
+            $notes = $course->notes()->orderBy('id')->cursor();
+            $writer = new NoteWriter;
+            foreach ($notes as $note) {
+                $writer->write($owner, $note, [], true);
+            }
             $course->flashcards()->delete();
             $course->assignments()->delete();
         }
