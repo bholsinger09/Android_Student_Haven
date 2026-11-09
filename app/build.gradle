@@ -21,6 +21,15 @@ android {
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
+    }
+    buildTypes {
+        debug {
+            buildConfigField 'String', 'BACKEND_URL', '"http://127.0.0.1:8088/api/v1/"'
+        }
+        release {
+            buildConfigField 'String', 'BACKEND_URL', '""'
+        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

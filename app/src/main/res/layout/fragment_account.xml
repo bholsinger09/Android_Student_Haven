@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:paddingHorizontal="8dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/backend_account"
+            android:textSize="20sp" android:textStyle="bold" android:padding="12dp" />
+        <Button android:id="@+id/account_close" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/close" />
+    </LinearLayout>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="20dp">
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/account_local_notice" android:textColor="@color/secondary_text"
+                android:paddingBottom="16dp" />
+            <TextView android:id="@+id/account_identity" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:textSize="18sp"
+                android:paddingBottom="16dp" />
+            <LinearLayout android:id="@+id/account_form" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical">
+                <EditText android:id="@+id/account_name" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:hint="@string/display_name"
+                    android:inputType="textPersonName" android:autofillHints="name"
+                    android:maxLength="255" android:minHeight="52dp" />
+                <EditText android:id="@+id/account_email" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:hint="@string/account_email"
+                    android:inputType="textEmailAddress" android:autofillHints="emailAddress"
+                    android:maxLength="255" android:minHeight="52dp" />
+                <EditText android:id="@+id/account_password" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:hint="@string/account_password"
+                    android:inputType="textPassword" android:autofillHints="password"
+                    android:saveEnabled="false" android:minHeight="52dp" />
+                <EditText android:id="@+id/account_confirmation" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:hint="@string/account_confirmation"
+                    android:inputType="textPassword" android:autofillHints="newPassword"
+                    android:saveEnabled="false" android:minHeight="52dp" />
+                <Button android:id="@+id/account_submit" style="@style/HavenPrimary"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/account_sign_in" android:layout_marginTop="16dp" />
+                <Button android:id="@+id/account_mode" style="@style/HavenAction"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/account_create" />
+            </LinearLayout>
+            <TextView android:id="@+id/account_status" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:paddingVertical="16dp"
+                android:accessibilityLiveRegion="polite" />
+            <Button android:id="@+id/account_check" style="@style/HavenAction"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/account_check" />
+            <Button android:id="@+id/account_logout" style="@style/HavenAction"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/account_sign_out" />
+            <Button android:id="@+id/account_forget" style="@style/HavenAction"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/account_forget" android:textColor="@color/pink" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

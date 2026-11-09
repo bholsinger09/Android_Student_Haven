@@ -9,10 +9,14 @@ build dependency and is not modified by this app.
 The launcher icon uses the same artwork as the iOS AppIcon asset catalog
 (`ios-marketing-1024@1x.png`), copied into Android resources. Android applies its
 launcher-specific shape mask; the illustration is not replaced or redrawn.
+The source contains JPEG data despite its catalog filename, so the Android copy
+uses `.jpg` to keep release resource compilation valid without changing image bytes.
 
 ## Status and scope
 
-This first version is **local-first**, not a feature-complete iOS replacement.
+This version is **local-first**, not a feature-complete iOS replacement.
+Debug builds include real Laravel account authentication for local development.
+Signing in does not upload, synchronize, back up, or isolate local study data.
 There is no simulated login or pretend cloud sharing.
 
 Implemented:
@@ -43,7 +47,7 @@ Implemented:
 
 Deferred iOS features:
 
-- Cloud accounts, Apple sign-in, password reset, CloudKit migration, cloud backup,
+- Production cloud accounts, Apple sign-in, password reset, CloudKit migration, cloud backup,
   cross-device sync, and shared study groups/messages/member search/QR invites.
 - Class timetable editing and overlap detection.
 - Linked-note navigation/knowledge graph.
@@ -57,12 +61,79 @@ native. The college dashboard shows real local study counts and shortcuts instea
 of fabricated college facts or enrollment statistics. Grades show the implemented
 weighted class grade rather than a nonfunctional GPA display. Study Groups is an
 explicitly unavailable screen until cloud sharing is implemented. No fake
-authentication, password actions, or online account controls are shown.
+authentication or password recovery actions are shown. Optional local-backend
+account controls are available only in debug builds under Profile.
 
-The local profile is **not an authenticated account**. Data is stored in this
+The local profile is **separate from any backend account**. Study data is stored in this
 app's private device storage. Uninstalling or clearing app data removes it.
 Automatic backups and device transfers are excluded; there is no export yet.
-The app does not request Internet, camera, or notification permissions.
+The app requests Internet access for backend authentication, but no camera or
+notification permissions.
+
+## Local Laravel authentication (debug only)
+
+The `feature/local-backend-auth` branch adds optional registration, login,
+logout, session restoration, and a backend connection test. It does not change
+Room tables or associate existing study data with an account. There is deliberately
+no automatic import/upload or profile overwrite. Anyone using the device still
+sees the same local classes and notes, including after switching backend accounts.
+
+In the separate `Student_Haven_Backend` project, configure PostgreSQL and migrate
+as described in its README, then start:
+
+```sh
+php artisan serve --host=127.0.0.1 --port=8088
+```
+
+With the emulator or USB-connected Android device running:
+
+```sh
+adb reverse tcp:8088 tcp:8088
+./gradlew installDebug
+```
+
+Debug builds use `http://127.0.0.1:8088/api/v1/`; `adb reverse` forwards device
+loopback to the Mac. Repeat the reverse command after restarting/reconnecting a
+device. With multiple devices use `adb -s <serial> reverse ...`. The Laravel
+server can remain bound to Mac loopback; do not expose it on your LAN.
+
+Open **More > Profile > Backend Account**. Test the connection while signed out,
+create an account (matching passwords, at least 12 characters and at most
+72 UTF-8 bytes), or sign in. Test the connection again to verify the authenticated
+profile. Sign out contacts Laravel to revoke the current device token. A failed
+network logout keeps the sign-in so you can retry; **Forget local sign-in**
+removes it only from this device without revoking the server token.
+
+Tokens expire after 30 days. The account screen reports expired/revoked sessions
+and clears the saved token after an authenticated 401. Saved sign-ins are not
+proof that the server session is still valid; use the connection test to verify.
+Validation errors, throttling, malformed responses, and unavailable servers are
+shown explicitly. No password is persisted or saved during Activity recreation.
+Passwords must be reentered after rotation. Account screenshots are blocked.
+
+The token and cached account identity are AES-GCM encrypted with an
+Android Keystore key in private preferences; backups remain disabled. Local
+name/college preferences and Room data are independent of that encrypted session.
+Do not use production credentials with this development HTTP endpoint.
+Cleartext HTTP is permitted **only for loopback in debug builds**. Release builds
+have no backend URL or account entry point and do not include the HTTP exception.
+Configure a real HTTPS service and account-data isolation/sync before production use.
+
+Default emulator tests exercise HTTP error handling using a temporary local
+server and test encrypted storage without contacting Laravel. The real-backend
+UI workflow is opt-in and creates/deletes a temporary account:
+
+```sh
+./gradlew connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.backendIntegration=true
+```
+
+Start Laravel and set up `adb reverse` first. Use a disposable local development
+database, never a production service. The live test skips if a sign-in already
+exists to avoid overwriting it. It verifies registration, invalid login, profile
+verification, persistence/recreation, token revocation, expired-session handling,
+and unchanged local profile/study counts. If a test is interrupted, inspect the
+local backend for leftover `android-...@example.com` test accounts and delete them.
 
 ## Open and build
 

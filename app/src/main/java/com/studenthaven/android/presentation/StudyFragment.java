@@ -18,6 +18,7 @@ import androidx.appcompat.widget.AppCompatButton;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import com.studenthaven.android.R;
+import com.studenthaven.android.BuildConfig;
 import com.studenthaven.android.data.StudyDatabase.Assignment;
 import com.studenthaven.android.data.StudyDatabase.Course;
 import com.studenthaven.android.data.StudyDatabase.Flashcard;
@@ -308,6 +309,12 @@ public final class StudyFragment extends Fragment {
         card(R.drawable.ic_profile, getString(R.string.edit_profile), "", "", this::editProfile);
         card(R.drawable.ic_college, getString(R.string.my_college_choice),
                 profile().getString("college", getString(R.string.college_unset)), "", this::chooseCollege);
+        if (BuildConfig.DEBUG) {
+            section(getString(R.string.backend_development));
+            card(R.drawable.ic_profile, getString(R.string.backend_account),
+                    getString(R.string.account_local_notice), "",
+                    () -> new AccountDialogFragment().show(getParentFragmentManager(), "backend-account"));
+        }
         section(getString(R.string.storage_and_privacy));
         card(R.drawable.ic_book, getString(R.string.local_only), getString(R.string.cloud_notice), "", null);
     }
