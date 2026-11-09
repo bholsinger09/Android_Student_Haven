@@ -2,6 +2,7 @@ package com.studenthaven.android.data;
 
 public final class BackendException extends Exception {
     private final int status;
+    private org.json.JSONObject response;
 
     public BackendException(String message, int status) {
         super(message);
@@ -14,4 +15,10 @@ public final class BackendException extends Exception {
     }
 
     public int status() { return status; }
+    public org.json.JSONObject response() { return response; }
+
+    public BackendException(String message, int status, org.json.JSONObject response) {
+        this(message, status);
+        this.response = response;
+    }
 }

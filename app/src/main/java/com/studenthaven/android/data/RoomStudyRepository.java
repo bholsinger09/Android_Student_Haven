@@ -17,6 +17,7 @@ public final class RoomStudyRepository implements StudyRepository {
     }
 
     @Override public LiveData<List<Course>> courses() { return dao.observeCourses(); }
+    @Override public List<Course> localCoursesForImport() { return dao.listCourses(); }
     @Override public LiveData<List<Note>> notes() { return dao.observeNotes(); }
     @Override public LiveData<List<Flashcard>> flashcards() { return dao.observeFlashcards(); }
     @Override public LiveData<List<Assignment>> assignments() { return dao.observeAssignments(); }

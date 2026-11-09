@@ -16,7 +16,8 @@ uses `.jpg` to keep release resource compilation valid without changing image by
 
 This version is **local-first**, not a feature-complete iOS replacement.
 Debug builds include real Laravel account authentication for local development.
-Signing in does not upload, synchronize, back up, or isolate local study data.
+The `feature/class-sync` branch adds a separate account-scoped Synced Classes
+workspace. Signing in alone does not upload or move existing local study data.
 There is no simulated login or pretend cloud sharing.
 
 Implemented:
@@ -44,11 +45,13 @@ Implemented:
   cards, session progress, and explicit review ratings.
 - Searchable college picker using the ten college names in the Swift model,
   with custom college entry and a persisted selection.
+- Debug-only account class workspace with offline edits, durable retry state,
+  change-feed downloads, deletion tracking, and explicit local/server conflict choices.
 
 Deferred iOS features:
 
 - Production cloud accounts, Apple sign-in, password reset, CloudKit migration, cloud backup,
-  cross-device sync, and shared study groups/messages/member search/QR invites.
+  synchronization of main study data, and shared study groups/messages/member search/QR invites.
 - Class timetable editing and overlap detection.
 - Linked-note navigation/knowledge graph.
 - Group study sessions, study timers, and notifications.
@@ -72,9 +75,9 @@ notification permissions.
 
 ## Local Laravel authentication (debug only)
 
-The `feature/local-backend-auth` branch adds optional registration, login,
-logout, session restoration, and a backend connection test. It does not change
-Room tables or associate existing study data with an account. There is deliberately
+Optional registration, login, logout, session restoration, and a backend connection
+test are available. They do not change the original Room tables or associate
+existing study data with an account. There is deliberately
 no automatic import/upload or profile overwrite. Anyone using the device still
 sees the same local classes and notes, including after switching backend accounts.
 
@@ -117,7 +120,8 @@ name/college preferences and Room data are independent of that encrypted session
 Do not use production credentials with this development HTTP endpoint.
 Cleartext HTTP is permitted **only for loopback in debug builds**. Release builds
 have no backend URL or account entry point and do not include the HTTP exception.
-Configure a real HTTPS service and account-data isolation/sync before production use.
+Configure a real HTTPS service and complete integration of the main study space
+before production use.
 
 Default emulator tests exercise HTTP error handling using a temporary local
 server and test encrypted storage without contacting Laravel. The real-backend
@@ -133,7 +137,55 @@ database, never a production service. The live test skips if a sign-in already
 exists to avoid overwriting it. It verifies registration, invalid login, profile
 verification, persistence/recreation, token revocation, expired-session handling,
 and unchanged local profile/study counts. If a test is interrupted, inspect the
-local backend for leftover `android-...@example.com` test accounts and delete them.
+local backend for leftover `android-...@example.com` or `sync-...@example.com`
+test accounts and delete them.
+
+## Account class synchronization (debug only)
+
+Use the backend's `backend-class-sync` branch with its latest migrations, then
+open **More > Profile > Backend Account > Synced Classes** after signing in.
+
+- This is a separate class-only workspace, **not the main Classes tab**. Notes,
+  cards, assignments, grades, main profile, and existing device-only classes do not
+  move or synchronize. This separation is intentional for the first sync stage.
+- Add or edit a class with **Save offline**. **Sync now** explicitly uploads pending
+  changes and downloads the account's latest changes. There is no background job,
+  automatic reconnect sync, or real-time listener yet; tap it on each device.
+- A second emulator/device signed into the same local account sees the class
+  after Sync now. Configure `adb reverse` separately on each device.
+- **Copy device-only classes** requires confirmation and copies only class metadata.
+  Originals and their related records remain untouched. Imports are atomic and
+  deduplicated by source class per account, including previously deleted copies.
+  A later edit to an original does not update its independent imported copy.
+- Offline classes, pending writes, acknowledged versions, remote conflicts, and
+  pull cursors are stored in a separate Room database keyed by backend user ID.
+  Switching accounts selects a different workspace; signed-out/expired sessions
+  cannot open it. Local cache remains for the next sign-in to the same account.
+  It is app-private device storage, not separately encrypted per account.
+- Tokens are needed for network calls; offline editing uses a saved, unexpired
+  session. Server-side revocation is detected on the next request.
+- Requests have durable UUID mutation IDs. If a response is lost, the exact
+  payload is retried rather than creating duplicate classes. Until that dispatched
+  write is acknowledged, further editing/deletion of that row is blocked with an
+  explicit message. You can still create/edit other rows.
+- A **Resolve conflict** action compares the local and server versions, including
+  deletion. Cancel keeps both unresolved. **Keep local** queues the chosen version
+  against the server's version; **Use server** discards the pending local edit.
+  A newer change can cause another conflict. No last-write-wins overwrite occurs.
+- Restoring class metadata after a server deletion cannot restore that class's
+  deleted server notes, cards, or assignments. Those features are not synced here.
+
+Room schema exports cover both databases. The original study database stays at
+version 1 and is not destructively migrated. Do not reset/reseed the backend to
+reuse account IDs while keeping device caches: reset only the separate sync cache
+for disposable testing, or use a fresh emulator. An installation points to one
+backend environment; multi-server switching is not supported.
+
+The opt-in live tests use two independent Room stores/sessions as two devices,
+exercise offline failure/retry, lost acknowledgements plus reopening, concurrent
+edits, local/server conflict choices, edit/delete conflicts, account isolation,
+and import consent through the actual UI. Backend tests verify pagination and
+the version preconditions on ordinary course update/delete routes.
 
 ## Open and build
 

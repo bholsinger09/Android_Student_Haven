@@ -78,6 +78,8 @@ public abstract class StudyDatabase extends RoomDatabase {
     @Dao
     public interface StudyDao {
         @Query("SELECT * FROM courses ORDER BY name COLLATE NOCASE")
+        List<Course> listCourses();
+        @Query("SELECT * FROM courses ORDER BY name COLLATE NOCASE")
         LiveData<List<Course>> observeCourses();
         @Query("SELECT * FROM notes ORDER BY title COLLATE NOCASE")
         LiveData<List<Note>> observeNotes();

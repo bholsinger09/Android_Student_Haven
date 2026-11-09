@@ -5,7 +5,7 @@ import org.json.JSONObject;
 import java.time.Instant;
 
 public final class AuthRepository {
-    public record Account(String name, String email, String expiresAt) {}
+    public record Account(String id, String name, String email, String expiresAt) {}
     private final BackendClient client;
     private final SessionStore store;
 
@@ -76,6 +76,22 @@ public final class AuthRepository {
 
     public void forget() throws BackendException { store.clear(); }
 
+    public JSONObject requestFor(String accountId, String method, String path, JSONObject body)
+            throws BackendException {
+        JSONObject session = session();
+        if (session == null || !account(session).id().equals(accountId)) {
+            throw new BackendException("Sign in to this account again before synchronizing its classes.", 401);
+        }
+        try {
+            return client.request(method, path, body, session.getString("token"));
+        } catch (BackendException exception) {
+            if (exception.status() == 401) store.clear();
+            throw exception;
+        } catch (JSONException exception) {
+            throw new BackendException("Cannot read the saved session. Use Forget local sign-in.", exception);
+        }
+    }
+
     private JSONObject session() throws BackendException {
         String value = store.load();
         if (value == null) return null;
@@ -94,7 +110,8 @@ public final class AuthRepository {
     private Account account(JSONObject session) throws BackendException {
         try {
             JSONObject data = session.getJSONObject("data");
-            return new Account(data.getString("name"), data.getString("email"), session.getString("expires_at"));
+            return new Account(data.getString("id"), data.getString("name"), data.getString("email"),
+                    session.getString("expires_at"));
         } catch (JSONException exception) {
             throw new BackendException("The backend returned an incomplete account response.", exception);
         }

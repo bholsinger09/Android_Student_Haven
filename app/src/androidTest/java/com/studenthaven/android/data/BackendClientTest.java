@@ -20,6 +20,8 @@ public class BackendClientTest {
         expectFailure(422, "{\"errors\":{\"email\":[\"Email already registered.\"]}}", "Email already registered.");
         expectFailure(401, "{}", "Your session expired");
         expectFailure(429, "{}", "Too many attempts");
+        expectFailure(409, "{\"conflict\":{}}", "Choose which version");
+        expectFailure(409, "{}", "Check the backend configuration");
         expectFailure(500, "{}", "HTTP 500");
         expectFailure(200, "<html>Not JSON</html>", "unexpected response");
         expectFailure(302, "", "HTTP 302");
@@ -34,12 +36,22 @@ public class BackendClientTest {
         } catch (BackendException expected) {
             assertTrue(expected.getMessage().contains("Cannot reach"));
         }
+
         try {
             new BackendClient("").request("GET", "me", null, null);
             fail("Expected configuration failure");
         } catch (BackendException expected) {
             assertTrue(expected.getMessage().contains("No backend"));
         }
+    }
+
+    @Test public void acceptsLargeUnicodeClassFeedWithinResponseLimit() throws Exception {
+        String escaped = "\\ud83d\\ude00";
+        StringBuilder text = new StringBuilder("{\"name\":\"");
+        for (int i = 0; i < 90000; i++) text.append(escaped);
+        text.append("\"}");
+        assertTrue(text.length() > 1048576);
+        assertEquals(180000, response(200, text.toString()).getString("name").length());
     }
 
     private void expectFailure(int status, String body, String message) throws Exception {

@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface StudyRepository {
     LiveData<List<Course>> courses();
+    List<Course> localCoursesForImport();
     LiveData<List<Note>> notes();
     LiveData<List<Flashcard>> flashcards();
     LiveData<List<Assignment>> assignments();

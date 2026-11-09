@@ -19,14 +19,18 @@ public final class AccountViewModel extends AndroidViewModel {
     public AccountViewModel(Application application) {
         super(application);
         this.application = (HavenApplication) application;
-        run(() -> new State(false, this.application.auth().restore(), "", false));
+        refresh();
     }
 
     public LiveData<State> state() { return state; }
 
+    public void refresh() {
+        run(() -> new State(false, application.auth().restore(), "", false));
+    }
+
     public void signIn(boolean register, String name, String email, String password, String confirmation) {
         run(() -> new State(false, application.auth().signIn(register, name, email, password, confirmation),
-                "Signed in. Study data remains local and is not synchronized.", false));
+                "Signed in. Main study data stays device-only. Open Synced Classes for account-only class synchronization.", false));
     }
 
     public void check() {

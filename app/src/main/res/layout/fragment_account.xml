@@ -55,6 +55,9 @@
             <Button android:id="@+id/account_logout" style="@style/HavenAction"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/account_sign_out" />
+            <Button android:id="@+id/account_classes" style="@style/HavenPrimary"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/synced_classes" />
             <Button android:id="@+id/account_forget" style="@style/HavenAction"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:text="@string/account_forget" android:textColor="@color/pink" />

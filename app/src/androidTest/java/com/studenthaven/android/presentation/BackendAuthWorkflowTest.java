@@ -35,6 +35,7 @@ public class BackendAuthWorkflowTest {
         SessionStore store = new SessionStore(context);
         Assume.assumeTrue("Do not overwrite a developer's saved sign-in", store.load() == null);
         var oldProfile = context.getSharedPreferences("profile", 0).getAll();
+        application.repository().localCoursesForImport();
         int[] counts = localCounts(context);
         String email = "android-" + UUID.randomUUID() + "@example.com";
         String password = "Test-" + UUID.randomUUID();
