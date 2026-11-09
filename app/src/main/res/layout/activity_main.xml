@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:orientation="vertical">
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/screen"
+        android:name="com.studenthaven.android.presentation.StudyFragment"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" />
+    <View android:layout_width="match_parent" android:layout_height="1dp"
+        android:background="@color/separator" />
+    <LinearLayout android:id="@+id/navigation"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:background="@color/surface">
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/tab_home"
+            style="@style/HavenTab" android:text="@string/home"
+            android:drawableTop="@drawable/ic_home" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/tab_classes"
+            style="@style/HavenTab" android:text="@string/classes"
+            android:drawableTop="@drawable/ic_book" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/tab_notes"
+            style="@style/HavenTab" android:text="@string/notes"
+            android:drawableTop="@drawable/ic_note" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/tab_flashcards"
+            style="@style/HavenTab" android:text="@string/flashcards"
+            android:drawableTop="@drawable/ic_cards" />
+        <androidx.appcompat.widget.AppCompatButton android:id="@+id/tab_more"
+            style="@style/HavenTab" android:text="@string/more"
+            android:drawableTop="@drawable/ic_more" />
+    </LinearLayout>
+</LinearLayout>

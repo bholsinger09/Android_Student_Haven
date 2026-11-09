@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#000000</color>
+    <color name="surface">#151515</color>
+    <color name="separator">#2C2C2E</color>
+    <color name="purple">#BA54D4</color>
+    <color name="purple_tint">#25112A</color>
+    <color name="primary_text">#FFFFFF</color>
+    <color name="secondary_text">#A0A0A6</color>
+    <color name="pink">#E66680</color>
+    <color name="navy">#003366</color>
+    <color name="blue">#5AA8FF</color>
+    <color name="green">#56D08A</color>
+    <color name="orange">#FFA64D</color>
+</resources>

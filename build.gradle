@@ -1,0 +1,10 @@
+plugins {
+    id 'com.android.application' version '8.11.1' apply false
+}
+
+// Keep rapidly changing compiler output out of potentially synced Documents folders.
+def outputRoot = new File(gradle.gradleUserHomeDir,
+        "student-haven-builds/${Integer.toHexString(rootDir.absolutePath.hashCode())}")
+allprojects {
+    layout.buildDirectory.set(new File(outputRoot, project.name))
+}

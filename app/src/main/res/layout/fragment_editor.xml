@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:paddingHorizontal="8dp">
+        <Button android:id="@+id/cancel" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/cancel" />
+        <TextView android:id="@+id/editor_title" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:gravity="center" android:textStyle="bold" android:textSize="17sp" />
+        <Button android:id="@+id/save" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/save" android:textStyle="bold" />
+    </LinearLayout>
+    <View android:layout_width="match_parent" android:layout_height="1dp"
+        android:background="@color/separator" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:id="@+id/form" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:padding="20dp"
+            android:orientation="vertical">
+            <TextView android:id="@+id/context_label" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:textColor="@color/purple"
+                android:paddingBottom="16dp" android:textSize="14sp" />
+            <LinearLayout android:id="@+id/fields" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:orientation="vertical" />
+            <TextView android:id="@+id/error" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:textColor="@color/pink"
+                android:paddingVertical="16dp" android:accessibilityLiveRegion="polite" />
+            <Button android:id="@+id/generate" style="@style/HavenPrimary"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/generate_cards" android:visibility="gone" />
+            <Button android:id="@+id/delete" style="@style/HavenAction"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="@string/delete" android:textColor="@color/pink"
+                android:visibility="gone" android:layout_marginTop="16dp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:orientation="vertical"
+    android:padding="20dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/study" android:textSize="28sp"
+            android:textStyle="bold" />
+        <Button android:id="@+id/close" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="@string/close" />
+    </LinearLayout>
+    <TextView android:id="@+id/progress_label" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textSize="13sp"
+        android:textColor="@color/secondary_text" android:paddingVertical="12dp" />
+    <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent" android:layout_height="4dp"
+        android:progressTint="@color/blue" />
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:id="@+id/card" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginVertical="24dp"
+            android:background="@drawable/bg_question" android:padding="28dp"
+            android:minHeight="300dp" android:gravity="center" android:orientation="vertical"
+            android:clickable="true" android:focusable="true">
+            <TextView android:id="@+id/side" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:text="@string/question"
+                android:gravity="center" android:textSize="14sp" />
+            <TextView android:id="@+id/text" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center"
+                android:textSize="28sp" android:textStyle="bold" android:paddingVertical="32dp" />
+            <TextView android:id="@+id/hint" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:gravity="center"
+                android:text="@string/tap_to_flip" android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+    <TextView android:id="@+id/error" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textColor="@color/pink"
+        android:accessibilityLiveRegion="polite" />
+    <Button android:id="@+id/reveal" style="@style/HavenPrimary"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="@string/reveal" />
+    <LinearLayout android:id="@+id/ratings" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:visibility="gone">
+        <Button android:id="@+id/again" style="@style/HavenAction"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/review_again" android:textColor="@color/pink" />
+        <Button android:id="@+id/hard" style="@style/HavenAction"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/review_hard" android:textColor="@color/orange" />
+        <Button android:id="@+id/good" style="@style/HavenAction"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/review_good" android:textColor="@color/blue" />
+        <Button android:id="@+id/easy" style="@style/HavenAction"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="@string/review_easy" android:textColor="@color/green" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Student Haven</string>
+    <string name="local_mode">Local study space • Saved on this device</string>
+    <string name="home">Home</string>
+    <string name="classes">Classes</string>
+    <string name="notes">Notes</string>
+    <string name="flashcards">Flashcards</string>
+    <string name="grades">Grades</string>
+    <string name="profile">Profile</string>
+    <string name="add">Add</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="close">Close</string>
+    <string name="loading">Loading your study space…</string>
+    <string name="saving">Saving…</string>
+    <string name="course_name">Class name</string>
+    <string name="course_code">Course code</string>
+    <string name="professor">Professor (optional)</string>
+    <string name="location">Location (optional)</string>
+    <string name="title">Title</string>
+    <string name="content">Note content</string>
+    <string name="tags">Tags (comma-separated)</string>
+    <string name="question">Question</string>
+    <string name="answer">Answer</string>
+    <string name="assignment_name">Assignment name</string>
+    <string name="score">Score (blank if not graded)</string>
+    <string name="max_score">Maximum score</string>
+    <string name="weight">Relative weight</string>
+    <string name="due_date">Due date (YYYY-MM-DD)</string>
+    <string name="display_name">Your name</string>
+    <string name="college">Your college</string>
+    <string name="choose_class">Choose a class</string>
+    <string name="create_class_first">Add a class before creating notes, flashcards, or assignments.</string>
+    <string name="empty_assignments">No assignments for this class yet.</string>
+    <string name="search_notes">Search titles, content, and tags</string>
+    <string name="generate_cards">Generate flashcards</string>
+    <string name="reveal">Reveal answer</string>
+    <string name="review_again">Again</string>
+    <string name="review_hard">Hard</string>
+    <string name="review_good">Good</string>
+    <string name="review_easy">Easy</string>
+    <string name="review_due">Due for review</string>
+    <string name="next_review">Next review: %1$s</string>
+    <string name="delete_course_warning">Delete this class and all its notes, flashcards, and assignments? This cannot be undone.</string>
+    <string name="delete_item_warning">Delete this item? This cannot be undone.</string>
+    <string name="cloud_notice">This version is local-only. There is no account sign-in, cloud backup, cross-device sync, or shared study groups. Uninstalling or clearing app data removes your study data.</string>
+    <string name="student">Student</string>
+    <string name="college_unset">Set your college in Profile</string>
+    <string name="course_label">%1$s · %2$s</string>
+    <string name="no_grade">No graded assignments yet.</string>
+    <string name="operation_failed">Could not save your changes. Please try again.</string>
+    <string name="item_missing">This item no longer exists. Close this editor and reload.</string>
+    <string name="more">More</string>
+    <string name="plus">+</string>
+    <string name="study_groups">Study Groups</string>
+    <string name="classroom_notetaking">Classroom Notetaking</string>
+    <string name="your_college_choice">Your College Choice</string>
+    <string name="my_college_choice">My College Choice</string>
+    <string name="choose_college">Choose College</string>
+    <string name="choose_your_college">Choose Your College</string>
+    <string name="college_picker_hint">Find your college below, or enter its name. Your choice is saved on this device.</string>
+    <string name="welcome_haven">Welcome to StudentStudyHaven!</string>
+    <string name="select_college_intro">Select your college to get started</string>
+    <string name="no_classes">No Classes Yet</string>
+    <string name="classes_intro">Add your classes to keep track of your schedule</string>
+    <string name="all_classes">All Classes</string>
+    <string name="add_class">Add Class</string>
+    <string name="edit_class">Edit Class</string>
+    <string name="class_information">Class Information</string>
+    <string name="new_note">New Note</string>
+    <string name="edit_note">Edit Note</string>
+    <string name="notes_intro">Keep your classroom notes together, one class at a time.</string>
+    <string name="add_note_for_class">Add A Note For Class</string>
+    <string name="no_results">No Results</string>
+    <string name="no_results_hint">No notes match your search.</string>
+    <string name="no_flashcards">No Flashcards Yet</string>
+    <string name="cards_intro">Create flashcards manually or generate them from your notes</string>
+    <string name="create_flashcard">Create Flashcard</string>
+    <string name="edit_flashcard">Edit Flashcard</string>
+    <string name="manage_flashcards">Edit Flashcards</string>
+    <string name="all_flashcards">All Flashcards</string>
+    <string name="start_studying">Start Studying</string>
+    <string name="study">Study</string>
+    <string name="tap_to_flip">Tap the card to flip</string>
+    <string name="review_progress">Progress                         %1$d / %2$d</string>
+    <string name="well_done">Well done!</string>
+    <string name="study_complete">Study Session Complete</string>
+    <string name="your_grades">Your Grades</string>
+    <string name="current_grade">Current Grade</string>
+    <string name="grade_percent">%1$.1f%%</string>
+    <string name="no_grade_value">—</string>
+    <string name="score_value">%1$.1f / %2$.1f points</string>
+    <string name="assignment_detail">Due %1$s · weight %2$.1f</string>
+    <string name="assignments">Assignments</string>
+    <string name="assignments_intro">Add assignments to track your class grade.</string>
+    <string name="add_assignment">Add Assignment</string>
+    <string name="edit_assignment">Edit Assignment</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="your_statistics">Your Statistics</string>
+    <string name="on_this_device">On This Device</string>
+    <string name="storage_and_privacy">Storage &amp; Privacy</string>
+    <string name="local_only">Local-only study space</string>
+    <string name="quick_stats">Quick Stats</string>
+    <string name="cards_due">Cards Due</string>
+    <string name="ungraded">Ungraded</string>
+    <string name="your_study_space">Your Study Space</string>
+    <string name="note_shortcut">Capture ideas and organize your class notes</string>
+    <string name="card_shortcut">Review your flashcards and build your knowledge</string>
+    <string name="stat_value">%1$d</string>
+    <string name="back_to_home">Back to Home</string>
+    <string name="groups_deferred">Study groups need a shared cloud backend. This local-first version does not support groups, messages, or invitations yet.</string>
+    <string name="cloud_required">Requires cloud sharing · Not available yet</string>
+    <plurals name="assignment_total">
+        <item quantity="one">%d assignment</item>
+        <item quantity="other">%d assignments</item>
+    </plurals>
+    <plurals name="cards_ready">
+        <item quantity="one">%d card ready to review</item>
+        <item quantity="other">%d cards ready to review</item>
+    </plurals>
+    <string-array name="colleges">
+        <item>Idaho State University</item>
+        <item>University of Idaho</item>
+        <item>Boise State University</item>
+        <item>Stanford University</item>
+        <item>MIT</item>
+        <item>Harvard University</item>
+        <item>UC Berkeley</item>
+        <item>Oxford University</item>
+        <item>University of Tokyo</item>
+        <item>University of Melbourne</item>
+    </string-array>
+</resources>

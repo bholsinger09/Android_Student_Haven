@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:gravity="center_vertical" android:paddingHorizontal="20dp"
+        android:paddingTop="12dp" android:paddingBottom="8dp">
+        <TextView android:id="@+id/screen_title" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:textSize="32sp" android:textStyle="bold"
+            android:text="@string/home" />
+        <Button android:id="@+id/add" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="48dp"
+            android:text="@string/plus" android:textSize="32sp"
+            android:contentDescription="@string/add" />
+        <Button android:id="@+id/college_choice" style="@style/HavenAction"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:drawableTop="@drawable/ic_college" android:drawableTint="@color/purple"
+            android:text="@string/your_college_choice" android:textSize="11sp" />
+    </LinearLayout>
+    <Button android:id="@+id/course" style="@style/HavenAction"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp" android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card" android:gravity="start|center_vertical"
+        android:drawableEnd="@drawable/ic_chevron" android:paddingHorizontal="16dp"
+        android:text="@string/choose_class" />
+    <EditText android:id="@+id/search" android:layout_width="match_parent"
+        android:layout_height="48dp" android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="8dp" android:background="@drawable/bg_card"
+        android:paddingHorizontal="16dp" android:hint="@string/search_notes"
+        android:inputType="text" android:autofillHints="" android:textSize="16sp" />
+    <TextView android:id="@+id/status" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:paddingHorizontal="20dp"
+        android:textColor="@color/pink" android:accessibilityLiveRegion="polite" />
+    <ScrollView android:id="@+id/scroll" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:id="@+id/content" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"
+            android:padding="20dp" />
+    </ScrollView>
+</LinearLayout>
